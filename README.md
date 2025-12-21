@@ -1,4 +1,4 @@
-# React Admin Dashboard
+<!-- # React Admin Dashboard
 
 A modern, responsive admin dashboard built with React, featuring a clean interface for managing users, analytics, and business operations.
 
@@ -167,4 +167,4 @@ Project Link: [https://github.com/yourusername/react-admin-dashboard](https://gi
 
 ---
 
-Made with ❤️ by Your Name
+Made with ❤️ by Your Name -->
