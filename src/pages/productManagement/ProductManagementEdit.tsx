@@ -1,13 +1,12 @@
 import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
-  FiPackage, FiTag, FiDollarSign, FiShoppingCart,
-  FiPercent, FiImage, FiLayers, FiGrid,
-  FiCheck, FiX, FiSave, FiTrash2,
+  FiPackage, FiDollarSign,
+  FiPercent, FiImage, FiX, FiSave,
   FiArrowLeft, FiUpload, FiXCircle, FiAlertCircle
 } from 'react-icons/fi';
 import { useDarkMode } from '@/contexts/DarkModeContext';
-import { productService, Product, CategoryDropdown } from '@/services/productServices';
+import { productService, CategoryDropdown } from '@/services/productServices';
 import Loading from '@/components/Loading';
 import { toast } from 'react-toastify';
 
@@ -204,7 +203,7 @@ const ProductManagementEdit: React.FC = () => {
       formDataToSend.append('productData', JSON.stringify(productData));
       
       // Append new images
-      newImages.forEach((image, index) => {
+      newImages.forEach((image) => {
         formDataToSend.append('productImages', image.file);
       });
 
@@ -254,66 +253,6 @@ const ProductManagementEdit: React.FC = () => {
   };
 
   // Alternative submit method if the first one doesn't work
-  const handleSubmitAlternative = async (e: FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateForm()) return;
-
-    try {
-      setSaving(true);
-
-      const formDataToSend = new FormData();
-      
-      // Append each field individually
-      formDataToSend.append('name', formData.name);
-      formDataToSend.append('code', formData.code);
-      formDataToSend.append('description', formData.description);
-      formDataToSend.append('stock', formData.stock.toString());
-      formDataToSend.append('price', formData.price.toString());
-      formDataToSend.append('discount', formData.discount.toString());
-      formDataToSend.append('category', formData.category);
-      formDataToSend.append('productStatus', formData.productStatus);
-      
-      // Append images to delete as separate entries
-      imagesToDelete.forEach(imageUrl => {
-        formDataToSend.append('imagesToDelete', imageUrl);
-      });
-
-      // Append new images
-      newImages.forEach(image => {
-        formDataToSend.append('productImages', image.file);
-      });
-
-      // Log FormData entries
-      console.log('FormData entries:');
-      for (const pair of (formDataToSend as any).entries()) {
-        console.log(pair[0], pair[1]);
-      }
-
-      // Update product
-      const response = await productService.updateProduct(id!, formDataToSend);
-      console.log('Update response:', response);
-      
-      toast.success('Product updated successfully!');
-      navigate(`/product-management/view/${id}`);
-      
-    } catch (err: any) {
-      console.error('Full error details:', err);
-      
-      let errorMessage = 'Failed to update product';
-      
-      if (err.response?.data?.message) {
-        errorMessage = err.response.data.message;
-      } else if (err.response?.data?.errors) {
-        const errors = err.response.data.errors;
-        errorMessage = Object.values(errors).flat().join(', ');
-      }
-      
-      toast.error(errorMessage);
-    } finally {
-      setSaving(false);
-    }
-  };
 
   // Clean up object URLs
   useEffect(() => {

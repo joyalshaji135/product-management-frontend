@@ -1,5 +1,5 @@
-import React from 'react'
-import ConsoleDashboard from './assets/console-dashboard/ConsoleDashboard'
+
+import ConsoleDashboard from '@/assets/console-dashboard/ConsoleDashboard'
 
 function Dashboard() {
   return (

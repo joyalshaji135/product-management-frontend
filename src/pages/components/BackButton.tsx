@@ -1,4 +1,3 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
 interface BackButtonProps {
@@ -6,7 +5,7 @@ interface BackButtonProps {
   onClick?: () => void;
 }
 
-function BackButton({ className = '', onClick }: BackButtonProps) {
+function BackButton({ onClick }: BackButtonProps) {
   const navigate = useNavigate();
   
   const handleClick = () => {

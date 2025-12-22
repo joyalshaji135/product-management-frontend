@@ -33,7 +33,6 @@ const ActionButton: React.FC<ActionButtonProps> = ({
   dropdownPosition = 'right',
   dropdownTitle = 'Actions',
   buttonStyle = 'default',
-  iconColor = 'currentColor',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   

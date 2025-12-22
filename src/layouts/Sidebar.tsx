@@ -1,9 +1,8 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { FiGrid, FiSettings, FiLogOut, FiUser } from "react-icons/fi";
 import logo from "@assets/images/amicare.png";
 import { MdLeaderboard } from "react-icons/md";
 import { Link, useNavigate } from "react-router-dom";
-import { useDarkMode } from "../contexts/DarkModeContext";
 import { useAuth } from "../hooks/useAuth";
 
 interface SidebarProps {
@@ -12,7 +11,6 @@ interface SidebarProps {
 }
 
 function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
-  const { darkMode } = useDarkMode();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [active, setActive] = useState("Dashboard");

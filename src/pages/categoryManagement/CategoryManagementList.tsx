@@ -1,7 +1,7 @@
 // src/pages/categoryManagement/CategoryManagementList.tsx
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { FiEye, FiEdit2, FiTrash2, FiPlus, FiSearch, FiFilter, FiDownload } from "react-icons/fi";
+import { FiEye, FiEdit2, FiTrash2, FiPlus, FiSearch, FiDownload } from "react-icons/fi";
 import { useDarkMode } from "@/contexts/DarkModeContext";
 import { categoryService, Category, CategoryFilters } from "@/services/categoryService";
 import Loading from "@/components/Loading";

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { useAuth } from "./hooks/useAuth";
-import ParticlesCanvas from "./assets/components/ParticlesCanvas";
+import { useAuth } from "@/hooks/useAuth";
+import ParticlesCanvas from "@/assets/components/ParticlesCanvas";
 
 const Login: React.FC = () => {
   const navigate = useNavigate();

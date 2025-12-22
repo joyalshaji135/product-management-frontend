@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
-function HeaderDate({ label = 'Date' }) {
+function HeaderDate({ }) {
   const [today, setToday] = useState('');
 
   useEffect(() => {

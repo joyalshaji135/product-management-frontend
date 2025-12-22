@@ -1,4 +1,3 @@
-import React from 'react';
 import { HiOutlineClipboardList } from 'react-icons/hi';
 import { Link } from 'react-router-dom';
 

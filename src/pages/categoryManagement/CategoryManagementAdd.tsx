@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   FiArrowLeft, FiSave, FiUpload, FiImage, 
-  FiFileText, FiCode, FiCheckCircle, FiXCircle,
+  FiFileText, FiCheckCircle, FiXCircle,
   FiEye, FiEyeOff
 } from 'react-icons/fi';
 import { useDarkMode } from '@/contexts/DarkModeContext';

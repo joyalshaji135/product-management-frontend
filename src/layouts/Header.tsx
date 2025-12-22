@@ -1,4 +1,3 @@
-import React from 'react';
 import { FiMenu, FiSun, FiMoon } from 'react-icons/fi';
 import { HiMiniBars3BottomLeft } from 'react-icons/hi2';
 import { useDarkMode } from '../contexts/DarkModeContext';

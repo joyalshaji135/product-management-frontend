@@ -22,7 +22,6 @@ const HeaderComponent: React.FC<HeaderComponentProps> = ({
   showAddButton = true,
    // Added default value
   addButtonLink = '',
-  onSearch = () => {},        // Added default empty function
 }) => {
   return (
     <div className={`w-full relative rounded-2xl p-5 flex items-center justify-between overflow-hidden ${className}`}

@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiUpload, FiImage, FiX, FiPackage } from "react-icons/fi";
+import { FiUpload, FiX, FiPackage } from "react-icons/fi";
 import { useDarkMode } from "@/contexts/DarkModeContext";
 import { productService, CategoryDropdown } from "@/services/productServices";
-import { useAuth } from "@/hooks/useAuth";
 
 function ProductManagementAdd() {
   const { darkMode } = useDarkMode();
-  const { user } = useAuth();
   const navigate = useNavigate();
   
   const [formData, setFormData] = useState({
@@ -184,7 +182,7 @@ function ProductManagementAdd() {
       formDataToSend.append("productStatus", formData.productStatus);
 
       // Append all images
-      images.forEach((image, index) => {
+      images.forEach((image) => {
         formDataToSend.append("productImages", image);
       });
 

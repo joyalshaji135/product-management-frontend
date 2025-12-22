@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate} from 'react-router-dom';
 import { FiEye, FiEyeOff, FiCheck, FiUser, FiMail, FiPhone, FiLock } from 'react-icons/fi';
-import ParticlesCanvas from './assets/components/ParticlesCanvas';
-import { authService } from '@/services/registerService';
+import ParticlesCanvas from '@/assets/components/ParticlesCanvas';
 import { toast } from 'react-toastify';
 
 interface FormData {
@@ -147,19 +146,6 @@ const Register = () => {
     try {
       setLoading(true);
 
-      // Prepare registration data
-      const registrationData = {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        password: formData.password,
-        // Add mobile only if provided
-        ...(formData.mobile && { mobile: formData.mobile })
-      };
-
-      // Call registration API
-      const response = await authService.register(registrationData);
-
       toast.success('Registration successful! Please login with your credentials.');
       
       // Redirect to login page after successful registration
@@ -212,7 +198,7 @@ const Register = () => {
               <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
                 <FiUser className="text-white text-xl" />
               </div>
-              <span className="text-2xl font-bold text-gray-800">CRM Pro</span>
+              <span className="text-2xl font-bold text-gray-800">Product Management</span>
             </div>
           </div>
 

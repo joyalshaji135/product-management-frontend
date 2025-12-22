@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   FiArrowLeft, FiSave, FiUpload, FiImage, 
-  FiFileText, FiCode, FiCheckCircle, FiXCircle,
+  FiFileText, FiCheckCircle, FiXCircle,
   FiEye, FiEyeOff, FiTrash2
 } from 'react-icons/fi';
 import { useDarkMode } from '@/contexts/DarkModeContext';
-import { categoryService, Category } from '@/services/categoryService';
+import { categoryService } from '@/services/categoryService';
 import Loading from '@/components/Loading';
 
 const CategoryManagementEdit: React.FC = () => {
@@ -180,7 +180,6 @@ const CategoryManagementEdit: React.FC = () => {
 
     // Image is optional for edit (can keep existing)
     if (formData.categoryImage) {
-      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
       const maxSize = 5 * 1024 * 1024;
       
       if (formData.categoryImage.size > maxSize) {

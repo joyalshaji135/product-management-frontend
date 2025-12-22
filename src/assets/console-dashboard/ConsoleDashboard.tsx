@@ -1,22 +1,7 @@
-import { useState } from 'react';
+
 import { FcBullish } from 'react-icons/fc';
 
-type ComplaintData = {
-  commercial: { July: number; June: number; Older: number };
-  residential: { July: number; June: number; Older: number };
-  total: number;
-  open: number;
-};
-
 const ConsoleDashboard: React.FC = () => {
-  const [currentDashboard] = useState("Operations");
-  
-  const complaintData: ComplaintData = {
-    commercial: { July: 4, June: 3, Older: 12 },
-    residential: { July: 4, June: 3, Older: 11 },
-    total: 31,
-    open: 10,
-  };
 
   return (
     <div className="p-4">

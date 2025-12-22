@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
-  FiPackage, FiTag, FiDollarSign, FiShoppingCart,
+  FiPackage, FiDollarSign,
   FiPercent, FiImage, FiLayers, FiGrid,
   FiCheck, FiX, FiEdit2, FiTrash2,
   FiArrowLeft, FiCalendar, FiClock, FiUser,

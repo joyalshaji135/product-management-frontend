@@ -1,9 +1,9 @@
 import { Routes, Route } from 'react-router-dom';
 import Layout from '@/layouts/Layout';
-import Home from '@/Home';
-import Login from '@/Login';
-import Register from '@/Register';
-import Dashboard from '@/Dashboard';
+import Home from '@/pages/Home';
+import Login from '@/pages/Login';
+import Register from '@/pages/Register';
+import Dashboard from '@/pages/Dashboard';
 import ProtectedRoute from '@/contexts/ProtectedRoute';
 import ProductManagementEdit from '@/pages/productManagement/ProductManagementEdit';
 import ProductManagementView from '@/pages/productManagement/ProductManagementView';
