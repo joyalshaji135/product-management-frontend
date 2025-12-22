@@ -1,170 +1,203 @@
-<!-- # React Admin Dashboard
 
-A modern, responsive admin dashboard built with React, featuring a clean interface for managing users, analytics, and business operations.
+# 🛍 Product Management System – Frontend
 
-## Features
-
-- **📊 Analytics Dashboard**: Real-time data visualization with charts and statistics
-- **👥 User Management**: Complete CRUD operations for user administration
-- **📈 Data Visualization**: Interactive charts and graphs using Recharts
-- **🎨 Modern UI**: Clean, professional design with Tailwind CSS
-- **📱 Responsive Design**: Fully optimized for desktop, tablet, and mobile devices
-- **🔍 Search & Filter**: Advanced filtering and search capabilities
-- **🌙 Dark Mode Support**: Toggle between light and dark themes
-- **🔔 Notifications**: Real-time notification system
-- **📄 Data Export**: Export data to CSV/Excel formats
-- **🔐 Authentication**: Secure login and role-based access control
-
-## Tech Stack
-
-- **React 18** - UI library
-- **Tailwind CSS** - Styling and responsive design
-- **Recharts** - Data visualization
-- **Lucide React** - Icon library
-- **React Router** - Navigation
-- **React Hooks** - State management
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js (v16 or higher)
-- npm or yarn
-
-### Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/react-admin-dashboard.git
-cd react-admin-dashboard
-```
-
-2. Install dependencies:
-```bash
-npm install
-# or
-yarn install
-```
-
-3. Start the development server:
-```bash
-npm start
-# or
-yarn start
-```
-
-4. Open your browser and navigate to `http://localhost:3000`
-
-## Project Structure
-
-```
-react-admin-dashboard/
-├── public/
-│   ├── index.html
-│   └── favicon.ico
-├── src/
-│   ├── components/
-│   │   ├── Dashboard/
-│   │   ├── Users/
-│   │   ├── Analytics/
-│   │   ├── Sidebar/
-│   │   └── Header/
-│   ├── pages/
-│   │   ├── Dashboard.jsx
-│   │   ├── Users.jsx
-│   │   └── Settings.jsx
-│   ├── hooks/
-│   │   └── useAuth.js
-│   ├── utils/
-│   │   └── helpers.js
-│   ├── App.jsx
-│   └── index.js
-├── package.json
-└── README.md
-```
-
-## Available Scripts
-
-- `npm start` - Runs the app in development mode
-- `npm test` - Launches the test runner
-- `npm run build` - Builds the app for production
-- `npm run eject` - Ejects from Create React App (one-way operation)
-
-## Key Components
-
-### Dashboard
-The main dashboard displays key metrics, charts, and recent activity. It provides an overview of important business data at a glance.
-
-### User Management
-Complete user administration interface with:
-- User listing with pagination
-- Add/Edit/Delete operations
-- Role assignment
-- Search and filter functionality
-
-### Analytics
-Interactive data visualization featuring:
-- Line charts for trends
-- Bar charts for comparisons
-- Pie charts for distributions
-- Custom date range selection
-
-## Configuration
-
-Create a `.env` file in the root directory:
-
-```env
-REACT_APP_API_URL=your_api_url_here
-REACT_APP_ENV=development
-```
-
-## Customization
-
-### Theming
-Modify the Tailwind configuration in `tailwind.config.js` to customize colors, fonts, and spacing.
-
-### Components
-All components are modular and can be easily customized or replaced. Each component is self-contained with its own styling and logic.
-
-## Performance Optimization
-
-- Code splitting with React.lazy()
-- Memoization with React.memo()
-- Virtual scrolling for large lists
-- Optimized bundle size with tree shaking
-
-## Browser Support
-
-- Chrome (latest)
-- Firefox (latest)
-- Safari (latest)
-- Edge (latest)
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Contact
-
-Your Name - [@yourtwitter](https://twitter.com/yourtwitter)
-
-Project Link: [https://github.com/yourusername/react-admin-dashboard](https://github.com/yourusername/react-admin-dashboard)
-
-## Acknowledgments
-
-- [React Documentation](https://reactjs.org/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [Recharts](https://recharts.org/)
-- [Lucide Icons](https://lucide.dev/)
+A modern frontend application for managing products with authentication, CRUD operations, search, and pagination.
+This project is built as part of a **Full-Stack Assignment** to demonstrate frontend architecture, API integration, and secure authentication handling.
 
 ---
 
-Made with ❤️ by Your Name -->
+## 🚀 Tech Stack
+
+* **Framework**: React (Vite / CRA) or Next.js
+* **Language**: JavaScript / TypeScript
+* **State Management**: Context API / Redux Toolkit
+* **Routing**: React Router DOM / Next Router
+* **HTTP Client**: Axios / Fetch API
+* **Styling**: CSS / Tailwind CSS / Bootstrap
+* **Authentication**: JWT (stored in localStorage or cookies)
+
+---
+
+## ✨ Features
+
+### 🔐 Authentication
+
+* User Registration
+* User Login
+* JWT-based authentication
+* Protected routes for product management
+* Logged-in user info shown in navbar
+
+### 📦 Product Management
+
+* View all products
+* Search products by name
+* Pagination support
+* View product details
+* Add new product (protected)
+* Edit product (protected)
+* Delete product with confirmation (protected)
+
+### 🖥 UI
+
+* Responsive design (mobile & desktop)
+* Clean and simple layout
+* Form validation with error handling
+
+---
+
+## 📂 Project Structure
+
+```bash
+.
+├── public/                # Static public assets
+├── src/
+│   ├── assets/            # Images, icons, fonts
+│   ├── components/        # Reusable UI components (Button, Input, Modal, etc.)
+│   ├── contexts/          # React Contexts (AuthContext, ThemeContext)
+│   ├── hooks/             # Custom hooks (useAuth, useDebounce, useFetch)
+│   ├── layouts/           # Layout components (AuthLayout, MainLayout)
+│   ├── pages/             # Page-level components (Login, Register, Products)
+│   ├── routes/            # Route definitions & protected routes
+│   ├── services/          # API service layer (Axios instances, API calls)
+│   ├── store/             # Global state management (Redux / Zustand)
+│   ├── App.tsx            # Root application component
+│   ├── main.tsx           # Application entry point
+│   ├── index.css          # Global styles
+│   └── vite-env.d.ts      # Vite environment types
+│
+├── .env.example           # Environment variables example
+├── .gitignore             # Git ignored files
+├── eslint.config.js       # ESLint configuration
+├── index.html             # HTML entry file
+├── package.json           # Project metadata & scripts
+├── postcss.config.js      # PostCSS configuration
+├── tailwind.config.js     # Tailwind CSS configuration
+├── tsconfig.json          # TypeScript configuration
+├── vite.config.ts         # Vite configuration
+└── README.md              # Project documentation
+```
+
+---
+
+
+---
+
+## 🔗 API Integration
+
+The frontend communicates with the backend via REST APIs.
+
+### Example APIs Used
+
+| Method | Endpoint         | Description           |
+| ------ | ---------------- | --------------------- |
+| POST   | `/auth/register` | Register user         |
+| POST   | `/auth/login`    | Login user            |
+| GET    | `/products`      | Get all products      |
+| GET    | `/products/:id`  | Get product by ID     |
+| POST   | `/products`      | Create product (Auth) |
+| PUT    | `/products/:id`  | Update product (Auth) |
+| DELETE | `/products/:id`  | Delete product (Auth) |
+
+---
+
+## ⚙️ Environment Variables
+
+Create a `.env` file in the root directory.
+
+### `.env.example`
+
+```env
+REACT_APP_API_BASE_URL=http://localhost:5173/api
+REACT_APP_API_KEY=dummyApiKey
+REACT_APP_API_VERSION=1.0.0
+
+```
+
+> ⚠️ Do NOT commit `.env` files with real values.
+
+---
+
+## 🛠 Installation & Setup
+
+### 1️⃣ Clone the Repository
+
+```bash
+git clone https://github.com/your-username/product-management-frontend.git
+cd product-management-frontend
+```
+
+### 2️⃣ Install Dependencies
+
+```bash
+npm install
+```
+
+### 3️⃣ Run the Application
+
+```bash
+npm run dev
+```
+
+The app will run at:
+
+```
+http://localhost:5173
+```
+
+---
+
+## 🔐 Authentication Flow
+
+1. User logs in / registers
+2. Backend returns JWT token
+3. Token stored in `localStorage`
+4. Token sent in `Authorization` header for protected requests
+5. Protected routes accessible only when authenticated
+
+---
+
+## 📦 Protected Routes
+
+* Add Product
+* Edit Product
+* Delete Product
+
+Unauthenticated users are redirected to the login page.
+
+---
+
+## 🧪 Validation & Error Handling
+
+* Form-level validation for inputs
+* API error handling with user-friendly messages
+* Auth checks on protected routes
+
+---
+
+## 🚀 Deployment (Optional)
+
+* **Frontend**: Vercel / Netlify
+* **Backend**: Render / Railway
+
+Deployed URL (optional):
+
+```
+https://your-app-url.vercel.app
+```
+
+---
+
+## 📌 Notes
+
+* UI design is kept simple and functional
+* Category data can be static or mocked
+* Focus is on functionality and clean code structure
+
+---
+
+## 👨‍💻 Author
+
+**Joyal Developer**
+Full Stack Developer
+
