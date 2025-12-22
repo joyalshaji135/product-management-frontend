@@ -123,7 +123,7 @@ REACT_APP_API_VERSION=1.0.0
 ### 1️⃣ Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/product-management-frontend.git
+git clone https://github.com/joyalshaji135/product-management-frontend.git
 cd product-management-frontend
 ```
 
@@ -183,7 +183,7 @@ Unauthenticated users are redirected to the login page.
 Deployed URL (optional):
 
 ```
-https://your-app-url.vercel.app
+https://product-fest-dev.onrender.com
 ```
 
 ---
