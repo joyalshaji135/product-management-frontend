@@ -57,7 +57,7 @@ export const publicService = {
   getAllCategories: async (): Promise<Category[]> => {
     const response = await api.get<ApiResponse<Category[]>>('/public/categories', {
       headers: {
-        'x-api-key': 'devXApiKey',
+        'x-api-key': 'prodXApiKey',
         'x-app-version': '1.0.0'
       }
     });
@@ -68,7 +68,7 @@ export const publicService = {
   getAllProducts: async (): Promise<Product[]> => {
     const response = await api.get<ApiResponse<Product[]>>('/public/products', {
       headers: {
-        'x-api-key': 'devXApiKey',
+        'x-api-key': 'prodXApiKey',
         'x-app-version': '1.0.0'
       }
     });
@@ -79,7 +79,7 @@ export const publicService = {
   getProductsByCategory: async (categoryId: string): Promise<Product[]> => {
     const response = await api.get<ApiResponse<Product[]>>(`/public/products/category/${categoryId}`, {
       headers: {
-        'x-api-key': 'devXApiKey',
+        'x-api-key': 'prodXApiKey',
         'x-app-version': '1.0.0'
       }
     });
@@ -90,7 +90,7 @@ export const publicService = {
   getProductById: async (id: string): Promise<Product> => {
     const response = await api.get<ApiResponse<Product>>(`/public/products/${id}`, {
       headers: {
-        'x-api-key': 'devXApiKey',
+        'x-api-key': 'prodXApiKey',
         'x-app-version': '1.0.0'
       }
     });
@@ -101,7 +101,7 @@ export const publicService = {
   searchProducts: async (query: string): Promise<Product[]> => {
     const response = await api.get<ApiResponse<Product[]>>(`/public/products/search?q=${query}`, {
       headers: {
-        'x-api-key': 'devXApiKey',
+        'x-api-key': 'prodXApiKey',
         'x-app-version': '1.0.0'
       }
     });
