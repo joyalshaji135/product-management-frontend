@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "./hooks/useAuth";
 import ParticlesCanvas from "./assets/components/ParticlesCanvas";
-import logo from "@assets/images/amicare.png";
 
 const Login: React.FC = () => {
   const navigate = useNavigate();

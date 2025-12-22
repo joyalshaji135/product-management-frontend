@@ -1,1156 +1,585 @@
-import { useState } from 'react';
-import HeaderDate from '@/pages/components/HeaderDate';
-import HeaderComponent from '@/pages/components/HeaderComponent';
-import FormButtons from '@/pages/components/FormButtons';
-import Dropdowns from '@/pages/components/Dropdowns';
-import { FiMapPin, FiTool, FiCalendar, FiPhone, FiInfo, FiX, FiSearch, FiPackage } from 'react-icons/fi';
-import Loading from '@/pages/components/Loading';
-
-const dummyCustomerData = [
-    {
-        id: 1,
-        name: "John Doe",
-        phone: "8304848359",
-        email: "john@example.com",
-        area: "Kowdiar",
-        state: "Kerala",
-        district: "Thiruvananthapuram",
-        serviceType: "CMS",
-        serviceDate: "2023-05-15",
-        amount: "₹2,500",
-        treatmentDetails: "Cockroach treatment for 2BHK apartment",
-        propertySize: "1200 sqft",
-        rooms: "3",
-        pestType: "Cockroaches",
-        landmark: "Near Kowdiar Palace",
-        pincode: "695003",
-        city: "Thiruvananthapuram",
-        street: "MG Road",
-        enquiryType: "Residential",
-        residentialType: "Apartment",
-        enquirySource: "Phone",
-        enquiryCategory: "Complaint",
-        urgency: "Medium",
-        budget: "₹2,000 - ₹3,000",
-        preferredDate: "2023-05-20"
-    },
-    {
-        id: 2,
-        name: "Jane Smith",
-        phone: "8765432109",
-        email: "jane@example.com",
-        area: "Vazhuthacaud",
-        state: "Kerala",
-        district: "Thiruvananthapuram",
-        serviceType: "Termite Control",
-        serviceDate: "2023-06-20",
-        amount: "₹3,800",
-        treatmentDetails: "Termite treatment for independent house",
-        propertySize: "1800 sqft",
-        rooms: "4",
-        pestType: "Termites",
-        landmark: "Near Ayurveda College",
-        pincode: "695014",
-        city: "Thiruvananthapuram",
-        street: "PMG Junction",
-        enquiryType: "Residential",
-        residentialType: "Villa",
-        enquirySource: "Website",
-        enquiryCategory: "Request",
-        urgency: "High",
-        budget: "₹3,500 - ₹4,000",
-        preferredDate: "2023-06-25"
-    },
-    {
-        id: 3,
-        name: "Robert Johnson",
-        phone: "7654321098",
-        email: "robert@example.com",
-        area: "Pattom",
-        state: "Kerala",
-        district: "Thiruvananthapuram",
-        serviceType: "Rodent Control",
-        serviceDate: "2023-07-10",
-        amount: "₹2,200",
-        treatmentDetails: "Rodent proofing for office space",
-        propertySize: "2500 sqft",
-        rooms: "6",
-        pestType: "Rodents",
-        landmark: "Near Pattom Palace",
-        pincode: "695004",
-        city: "Thiruvananthapuram",
-        street: "Sasthamangalam Road",
-        enquiryType: "Commercial",
-        commercialType: "Office",
-        enquirySource: "Walk-in",
-        enquiryCategory: "Query",
-        urgency: "Low",
-        budget: "₹2,000 - ₹2,500",
-        preferredDate: "2023-07-15"
-    }
-];
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { FiUpload, FiImage, FiX, FiPackage } from "react-icons/fi";
+import { useDarkMode } from "@/contexts/DarkModeContext";
+import { productService, CategoryDropdown } from "@/services/productServices";
+import { useAuth } from "@/hooks/useAuth";
 
 function ProductManagementAdd() {
-    const [state, setState] = useState<string>("Kerala");
-    const [enquirySource, setEnquirySource] = useState<string>("Phone");
-    const [enquiryCategory, setEnquiryCategory] = useState<string>("Complaint");
-    const [serviceType, setServiceType] = useState<string>("CMS");
-    const [urgency, setUrgency] = useState<string>("Low");
-    const [pestType, setPestType] = useState<string>("");
-    const [previousTreatment, setPreviousTreatment] = useState<string>("");
-    const [district, setDistrict] = useState<string>("Thiruvanathapuram");
-    const [customEnquirySource, setCustomEnquirySource] = useState<string>("");
-    const [customEnquiryCategory, setCustomEnquiryCategory] = useState<string>("");
-    const [customServiceType, setCustomServiceType] = useState<string>("");
-    const [customPestType, setCustomPestType] = useState<string>("");
-    const [enquiryType, setEnquiryType] = useState<string>("");
-    const [attend, setAttend] = useState<string>("");
-    const [assign, setAssign] = useState<string>("");
-    const [residentialType, setResidentialType] = useState<string>("");
-    const [commercialType, setCommercialType] = useState<string>("");
-    const [phoneSearch, setPhoneSearch] = useState<string>("");
-    const [searchResults, setSearchResults] = useState<any[]>([]);
-    const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
-    const [isSearching, setIsSearching] = useState(false);
-    const [showFormSections, setShowFormSections] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isSubmitted, setIsSubmitted] = useState(false);
-    const [formData, setFormData] = useState({
-        inspectionNeeded: false
+  const { darkMode } = useDarkMode();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    stock: 50,
+    price: 0,
+    discount: 0,
+    category: "",
+    productStatus: "active" as "active" | "inactive",
+  });
+
+  const [images, setImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [categories, setCategories] = useState<CategoryDropdown[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch categories on component mount
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      setCategoriesLoading(true);
+      const categoriesData = await productService.getCategoriesForDropdown();
+      setCategories(categoriesData);
+    } catch (err: any) {
+      setError("Failed to load categories");
+      console.error("Error fetching categories:", err);
+    } finally {
+      setCategoriesLoading(false);
+    }
+  };
+
+  // Handle form input changes
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    
+    if (type === "number") {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value === "" ? 0 : parseFloat(value)
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+
+    // Clear error for this field
+    if (formErrors[name]) {
+      setFormErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+  };
+
+  // Handle image upload
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const newImages: File[] = [];
+    const newPreviews: string[] = [];
+
+    Array.from(files).forEach(file => {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError(`File ${file.name} is not an image`);
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError(`File ${file.name} is too large (max 5MB)`);
+        return;
+      }
+
+      newImages.push(file);
+      const preview = URL.createObjectURL(file);
+      newPreviews.push(preview);
     });
 
-    const [firstName, setFirstName] = useState("");
-    const [lastName, setLastName] = useState("");
-    const [phone, setPhone] = useState("");
-    const [email, setEmail] = useState("");
-    const [whatsapp, setWhatsapp] = useState("");
-    const [street, setStreet] = useState("");
-    const [area, setArea] = useState("");
-    const [city, setCity] = useState("");
-    const [pincode, setPincode] = useState("");
-    const [landmark, setLandmark] = useState("");
-    const [propertySize, setPropertySize] = useState("");
-    const [rooms, setRooms] = useState("");
-    const [previousTreatmentDetails, setPreviousTreatmentDetails] = useState("");
-    const [budget, setBudget] = useState("");
-    const [preferredDate, setPreferredDate] = useState("");
-    const [notes, setNotes] = useState("");
+    // Limit to 5 images
+    if (images.length + newImages.length > 5) {
+      setError("Maximum 5 images allowed");
+      return;
+    }
 
-    const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFormData({
-            ...formData,
-            inspectionNeeded: e.target.checked
-        });
+    setImages(prev => [...prev, ...newImages]);
+    setImagePreviews(prev => [...prev, ...newPreviews]);
+    setError(null);
+  };
+
+  // Remove image
+  const removeImage = (index: number) => {
+    const newImages = [...images];
+    const newPreviews = [...imagePreviews];
+    
+    // Revoke object URL to prevent memory leak
+    URL.revokeObjectURL(newPreviews[index]);
+    
+    newImages.splice(index, 1);
+    newPreviews.splice(index, 1);
+    
+    setImages(newImages);
+    setImagePreviews(newPreviews);
+  };
+
+  // Validate form
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+
+    if (!formData.name.trim()) {
+      errors.name = "Product name is required";
+    }
+
+    if (!formData.description.trim()) {
+      errors.description = "Description is required";
+    }
+
+    if (formData.stock < 0) {
+      errors.stock = "Stock cannot be negative";
+    }
+
+    if (formData.price <= 0) {
+      errors.price = "Price must be greater than 0";
+    }
+
+    if (formData.discount < 0 || formData.discount > 100) {
+      errors.discount = "Discount must be between 0 and 100";
+    }
+
+    if (!formData.category) {
+      errors.category = "Category is required";
+    }
+
+    if (images.length === 0) {
+      errors.images = "At least one product image is required";
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const formDataToSend = new FormData();
+      formDataToSend.append("name", formData.name);
+      formDataToSend.append("description", formData.description);
+      formDataToSend.append("stock", formData.stock.toString());
+      formDataToSend.append("price", formData.price.toString());
+      formDataToSend.append("discount", formData.discount.toString());
+      formDataToSend.append("category", formData.category);
+      formDataToSend.append("productStatus", formData.productStatus);
+
+      // Append all images
+      images.forEach((image, index) => {
+        formDataToSend.append("productImages", image);
+      });
+
+      // Create product
+      const createdProduct = await productService.createProduct(formDataToSend);
+      
+      setSuccess(`Product "${createdProduct.name}" created successfully!`);
+      
+      // Reset form after successful submission
+      setTimeout(() => {
+        navigate("/product-management-list");
+      }, 2000);
+
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || "Failed to create product";
+      setError(errorMessage);
+      console.error("Error creating product:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle cancel
+  const handleCancel = () => {
+    if (window.confirm("Are you sure you want to cancel? All unsaved changes will be lost.")) {
+      navigate("/product-management-list");
+    }
+  };
+
+  // Clean up image previews on unmount
+  useEffect(() => {
+    return () => {
+      imagePreviews.forEach(preview => URL.revokeObjectURL(preview));
     };
+  }, [imagePreviews]);
 
-    const handleSubmit = async () => {
-        setIsSubmitting(true);
-        try {
-            // Your form submission logic
-            console.log('Submitting form...');
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            console.log('Form submitted successfully');
-            setIsSubmitted(true);
-        } catch (error) {
-            console.error('Error submitting form:', error);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    const handleCancel = () => {
-        // Reset form or navigate away
-        console.log('Form cancelled');
-    };
-
-    const hasFormData = () => {
-        if (previousTreatment === "Yes") {
-            return !!selectedCustomer;
-        } else {
-            return (
-                firstName.trim() !== '' &&
-                lastName.trim() !== '' &&
-                phone.trim() !== '' &&
-                street.trim() !== '' &&
-                area.trim() !== '' &&
-                city.trim() !== '' &&
-                pincode.trim() !== '' &&
-                landmark.trim() !== ''
-            );
-        }
-    };
-
-    const handlePickUpFrom = () => {
-        setShowFormSections(!showFormSections);
-    };
-
-    const handleDropdownChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        return e.target.value;
-    };
-
-    const handleSearch = () => {
-        if (!phoneSearch) return;
-
-        setIsSearching(true);
-        // Simulate API call with timeout
-        setTimeout(() => {
-            const results = dummyCustomerData.filter(customer =>
-                customer.phone.includes(phoneSearch)
-            );
-            setSearchResults(results);
-            setIsSearching(false);
-        }, 800);
-    };
-
-    const handleSelectCustomer = (customer: any) => {
-        setSelectedCustomer(customer);
-    };
-
-    const handleClearSelection = () => {
-        setSelectedCustomer(null);
-        setPhoneSearch("");
-        setSearchResults([]);
-    };
-
-    return (
-        <div className="container mx-auto bg-gray-150 border-b border-gray-200">
-            <div className="flex items-center justify-between bg-gray-150 p-4">
-                <h2 className="text-xl font-bold text-black-800 flex items-center">
-                    <span className="text-gray-600 text-[18px] mr-2">Lead Management</span>
-                </h2>
-                <div className="flex items-center space-x-2">
-                    <HeaderDate />
-                </div>
+  return (
+    <div className={`min-h-screen ${darkMode ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
+      <div className="container mx-auto px-4 py-6">
+        {/* Header */}
+        <div className={`mb-6 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-2xl font-bold mb-2">Add New Product</h1>
+              <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                <span>Dashboard</span>
+                <span className="mx-2">/</span>
+                <span>Product Management</span>
+                <span className="mx-2">/</span>
+                <span className="text-gray-400 dark:text-gray-500">Add Product</span>
+              </div>
             </div>
-
-            <div className="container mx-auto px-2">
-                <HeaderComponent
-                    title="Enquiry Add"
-                    breadcrumb="Dashboard / Enquiry / Add"
-                    className="mb-4"
-                    showBackButton={true}
-                    showAddButton={false}
-                />
-
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <Loading />
-
-                    <div className="p-6 border-b border-gray-200">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="relative">
-                                <div className="flex space-x-4 mt-5">
-                                    <button
-                                        type="button"
-                                        onClick={() => setPreviousTreatment("No")}
-                                        className={`px-5 py-3 rounded-xl text-sm font-medium transition-all duration-200 flex items-center ${
-                                            previousTreatment === "No"
-                                                ? "bg-blue-500 text-white shadow-md hover:bg-blue-600"
-                                                : "bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-100"
-                                        }`}
-                                    >
-                                        <svg 
-                                            className={`w-5 h-5 mr-2 ${
-                                                previousTreatment === "No" ? "text-blue-100" : "text-blue-500"
-                                            }`} 
-                                            fill="none" 
-                                            viewBox="0 0 24 24" 
-                                            stroke="currentColor"
-                                        >
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                        </svg>
-                                        New Customer
-                                    </button>
-                                    
-                                    <button
-                                        type="button"
-                                        onClick={() => setPreviousTreatment("Yes")}
-                                        className={`px-5 py-3 rounded-xl text-sm font-medium transition-all duration-200 flex items-center ${
-                                            previousTreatment === "Yes"
-                                                ? "bg-emerald-500 text-white shadow-md hover:bg-emerald-600"
-                                                : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-100"
-                                        }`}
-                                    >
-                                        <svg 
-                                            className={`w-5 h-5 mr-2 ${
-                                                previousTreatment === "Yes" ? "text-emerald-100" : "text-emerald-500"
-                                            }`} 
-                                            fill="none" 
-                                            viewBox="0 0 24 24" 
-                                            stroke="currentColor"
-                                        >
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                        </svg>
-                                        Existing Customer
-                                    </button>
-                                </div>
-                            </div>
-                            {previousTreatment === "Yes" && (
-                                <div className="relative md:col-span-2">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Phone Number Search <span className="text-red-500">*</span>
-                                    </label>
-                                    <div className="relative">
-                                        <div className="relative flex items-center">
-                                            <input
-                                                type="tel"
-                                                value={phoneSearch}
-                                                onChange={(e) => {
-                                                    const value = e.target.value.replace(/\D/g, '').slice(0, 10);
-                                                    setPhoneSearch(value);
-                                                    setSearchResults([]);
-                                                    setSelectedCustomer(null);
-                                                }}
-                                                maxLength={10}
-                                                placeholder="Enter 10 digit phone number"
-                                                className="w-full px-4 py-3 pl-10 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white shadow-sm transition-all duration-200 hover:border-gray-400 pr-12"
-                                                inputMode="numeric"
-                                                pattern="[0-9]*"
-                                            />
-                                            <div className="absolute left-3 text-gray-400">
-                                                <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                                                </svg>
-                                            </div>
-                                            <button
-                                                onClick={handleSearch}
-                                                disabled={!phoneSearch || phoneSearch.length !== 10 || isSearching}
-                                                className={`absolute right-0 flex items-center justify-center h-full px-4 text-white rounded-r-lg transition-colors duration-200 ${
-                                                    isSearching 
-                                                        ? 'bg-green-400' 
-                                                        : phoneSearch && phoneSearch.length === 10 
-                                                            ? 'bg-green-500 hover:bg-green-600' 
-                                                            : 'bg-gray-300 cursor-not-allowed'
-                                                }`}
-                                            >
-                                                {isSearching ? (
-                                                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                    </svg>
-                                                ) : (
-                                                    <>
-                                                        <FiSearch className="h-5 w-5" />
-                                                        <span className="ml-2 text-sm font-medium hidden sm:inline">Search</span>
-                                                    </>
-                                                )}
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                    <div className='container'>
-                        {searchResults.length > 0 && !selectedCustomer && (
-                            <div className="absolute z-20 mt-4 container mx-auto px-4 bg-white shadow-xl rounded-lg border border-gray-100 max-h-80 overflow-auto transition-all duration-200 ease-in-out transform origin-top">
-                                {searchResults.map((customer) => (
-                                    <div
-                                        key={customer.id}
-                                        className="p-3.5 hover:bg-blue-50/80 cursor-pointer border-b border-gray-100 last:border-0 transition-all duration-200 ease-in-out group active:scale-[0.98]"
-                                        onClick={() => handleSelectCustomer(customer)}
-                                    >
-                                        <div className="flex justify-between items-center">
-                                            <span className="font-semibold text-gray-900 group-hover:text-blue-700 transition-colors text-[15px]">
-                                                {customer.name}
-                                            </span>
-                                            <span className="text-xs font-bold bg-blue-100/90 text-blue-800 px-2.5 py-1 rounded-full whitespace-nowrap shadow-sm">
-                                                <FiPhone className="inline mr-1.5" size={12} />
-                                                {customer.phone}
-                                            </span>
-                                        </div>
-
-                                        <div className="text-sm text-gray-700 mt-1.5 flex items-center group-hover:text-gray-900 transition-colors">
-                                            <FiMapPin className="mr-2 flex-shrink-0 text-blue-600/90" size={15} />
-                                            <span className="truncate font-medium">
-                                                {customer.area}, {customer.district}
-                                            </span>
-                                        </div>
-
-                                        <div className="flex items-center mt-2 text-xs">
-                                            <span className="inline-flex items-center text-gray-600 bg-gray-50 px-2 py-1 rounded-md">
-                                                <FiCalendar className="mr-1.5 text-blue-600/80" size={12} />
-                                                <span className="font-medium">Last:</span> {customer.serviceDate}
-                                            </span>
-                                            <span className="mx-1.5 text-gray-300">|</span>
-                                            <span className="inline-flex items-center text-gray-600 bg-gray-50 px-2 py-1 rounded-md">
-                                                <FiTool className="mr-1.5 text-blue-600/80" size={12} />
-                                                <span className="font-medium">Service:</span> {customer.serviceType}
-                                            </span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        {/* Selected customer card */}
-                        {selectedCustomer && (
-                            <div className="mt-3 bg-blue-50 border border-blue-200 rounded-lg p-4 relative transition-all duration-200">
-                                <button
-                                    onClick={handleClearSelection}
-                                    className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 transition-colors"
-                                    aria-label="Clear selection"
-                                >
-                                    <FiX className="h-5 w-5" />
-                                </button>
-
-                                <div className="flex items-start mb-3">
-                                    <div className="bg-blue-100 p-2 rounded-full mr-3">
-                                        <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <h4 className="font-semibold text-blue-800">{selectedCustomer.name}</h4>
-                                        <p className="text-sm text-gray-600">{selectedCustomer.phone}</p>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                                    <div className="bg-white p-2 rounded border border-gray-100">
-                                        <div className="text-xs text-gray-500 uppercase tracking-wider">Area</div>
-                                        <div>{selectedCustomer.area}</div>
-                                    </div>
-                                    <div className="bg-white p-2 rounded border border-gray-100">
-                                        <div className="text-xs text-gray-500 uppercase tracking-wider">District</div>
-                                        <div>{selectedCustomer.district}</div>
-                                    </div>
-                                    <div className="bg-white p-2 rounded border border-gray-100">
-                                        <div className="text-xs text-gray-500 uppercase tracking-wider">Service Type</div>
-                                        <div>{selectedCustomer.serviceType}</div>
-                                    </div>
-                                    <div className="bg-white p-2 rounded border border-gray-100">
-                                        <div className="text-xs text-gray-500 uppercase tracking-wider">Last Service</div>
-                                        <div>{selectedCustomer.serviceDate}</div>
-                                    </div>
-                                    <div className="bg-white p-2 rounded border border-gray-100">
-                                        <div className="text-xs text-gray-500 uppercase tracking-wider">Amount</div>
-                                        <div className="font-medium text-green-600">{selectedCustomer.amount}</div>
-                                    </div>
-                                    <div className="sm:col-span-2 bg-white p-2 rounded border border-gray-100">
-                                        <div className="text-xs text-gray-500 uppercase tracking-wider">Treatment Details</div>
-                                        <div>{selectedCustomer.treatmentDetails}</div>
-                                    </div>
-                                </div>
-                                <div className="flex justify-end mt-4">
-                                    <button
-                                        onClick={handlePickUpFrom}
-                                        className="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 active:bg-green-800 active:shadow-inner flex items-center justify-center gap-2"
-                                    >
-                                        <FiPackage className="text-lg" />
-                                        {showFormSections ? "Hide Form" : "Pick up from"}
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-
-                        {phoneSearch && !selectedCustomer && (
-                            <div className={`mt-2 p-3 rounded-md text-sm flex items-start 
-                                ${isSearching ? 'bg-blue-50 border border-blue-100 text-blue-700' : 
-                                'bg-yellow-50 border border-yellow-100 text-yellow-700'}`}>
-                                
-                                {isSearching ? (
-                                    <svg className="h-4 w-4 mt-0.5 mr-2 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                ) : (
-                                    <svg className="h-4 w-4 mt-0.5 mr-2 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                    </svg>
-                                )}
-                                
-                                {isSearching ? (
-                                    <div className="flex items-center">
-                                        <svg className="animate-spin mr-2 h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                        Searching customer records...
-                                    </div>
-                                ) : (
-                                    searchResults.length === 0 && (
-                                        <div>
-                                            <p className="font-medium">No records found</p>
-                                            <p className="text-yellow-600">No previous customer records found for this phone number</p>
-                                        </div>
-                                    )
-                                )}
-                            </div>
-                        )}
-                    </div>
-                    {(previousTreatment === "No" || showFormSections) && (
-                        <>
-                            {/* Basic Information Section */}
-                            <div className="p-6 border-b border-gray-200">
-                                <div className="flex justify-between items-center mb-6">
-                                    <h3 className="text-lg font-semibold text-gray-800 flex items-center">
-                                        <span className="w-2 h-6 bg-green-500 rounded-full mr-3"></span>
-                                        Basic Information
-                                    </h3>
-                                    <span className="text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
-                                        Lead ID: <span className="font-semibold text-gray-800">PC-00124</span>
-                                    </span>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    {/* Customer Name */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                            First Name <span className="text-red-500">*</span>
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={firstName}
-                                            onChange={(e) => setFirstName(e.target.value)}
-                                            placeholder="Enter First name"
-                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                            Last Name <span className="text-red-500">*</span>
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={lastName}
-                                            onChange={(e) => setLastName(e.target.value)}
-                                            placeholder="Enter last name"
-                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all"
-                                        />
-                                    </div>
-
-                                    {/* Phone */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                            Phone <span className="text-red-500">*</span>
-                                        </label>
-                                        <input
-                                            type="tel"
-                                            value={phone}
-                                            onChange={(e) => setPhone(e.target.value)}
-                                            placeholder="Enter phone number"
-                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                                        />
-                                    </div>
-
-                                    {/* Email */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                            Email
-                                        </label>
-                                        <input
-                                            type="email"
-                                            value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
-                                            placeholder="Enter email address"
-                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                                        />
-                                    </div>
-
-                                    {/* Alternate Phone */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                            WhatsApp Number
-                                        </label>
-                                        <input
-                                            type="tel"
-                                            value={whatsapp}
-                                            onChange={(e) => setWhatsapp(e.target.value)}
-                                            placeholder="Enter WhatsApp number"
-                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                                        />
-                                    </div>
-                                    <Dropdowns
-                                        label="Enquiry Type"
-                                        value={enquiryType}
-                                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setEnquiryType(e.target.value)}
-                                        options={[
-                                            { value: "Residential", label: "Residential" },
-                                            { value: "Commercial", label: "Commercial" },
-                                        ]}
-                                        searchable={true}
-                                    />
-
-                                    {enquiryType === "Residential" && (
-                                        <Dropdowns
-                                            label="Residential Type"
-                                            value={residentialType}
-                                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setResidentialType(e.target.value)}
-                                            options={[
-                                                { value: "", label: "Select residential type" },
-                                                { value: "Apartment", label: "Apartment" },
-                                                { value: "Villa", label: "Villa" },
-                                                { value: "Townhouse", label: "Townhouse" },
-                                                { value: "Penthouse", label: "Penthouse" }
-                                            ]}
-                                            searchable={true}
-                                        />
-                                    )}
-
-                                    {enquiryType === "Commercial" && (
-                                        <Dropdowns
-                                            label="Commercial Type"
-                                            value={commercialType}
-                                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCommercialType(e.target.value)}
-                                            options={[
-                                                { value: "", label: "Select commercial type" },
-                                                { value: "Office", label: "Office" },
-                                                { value: "Retail", label: "Retail" },
-                                                { value: "Warehouse", label: "Warehouse" },
-                                                { value: "Hotel", label: "Hotel" }
-                                            ]}
-                                            searchable={true}
-                                        />
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Property Details Section */}
-                            <div className="p-6 border-b border-gray-200">
-                                <h3 className="text-lg font-semibold text-gray-800 mb-6 flex items-center">
-                                    <span className="w-2 h-6 bg-blue-500 rounded-full mr-3"></span>
-                                    Property Details
-                                </h3>
-
-                                <div className="mb-4">
-                                    <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
-                                        <FiMapPin className="mr-2 text-gray-500" />
-                                        Address Information
-                                    </h4>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                        {/* Street */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                                Street <span className="text-red-500">*</span>
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={street}
-                                                onChange={(e) => setStreet(e.target.value)}
-                                                placeholder="Enter street address"
-                                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                                            />
-                                        </div>
-
-                                        {/* Area */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                                Area <span className="text-red-500">*</span>
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={area}
-                                                onChange={(e) => setArea(e.target.value)}
-                                                placeholder="Enter area"
-                                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                                            />
-                                        </div>
-
-                                        {/* City */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                                City <span className="text-red-500">*</span>
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={city}
-                                                onChange={(e) => setCity(e.target.value)}
-                                                placeholder="Enter city"
-                                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                                            />
-                                        </div>
-
-                                        {/* State Dropdown */}
-                                        <div className="">
-                                            <Dropdowns
-                                                label="State"
-                                                value={state}
-                                                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setState(e.target.value)}
-                                                options={[
-                                                    { value: "Kerala", label: "Kerala" },
-                                                    { value: "Tamil Nadu", label: "Tamil Nadu" },
-                                                    { value: "Karnataka", label: "Karnataka" },
-                                                    { value: "Andhra Pradesh", label: "Andhra Pradesh" }
-                                                ]}
-                                                searchable={true}
-                                            />
-                                        </div>
-
-                                        <div className="">
-                                            <Dropdowns
-                                                label="District"
-                                                value={district}
-                                                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setDistrict(e.target.value)}
-                                                options={[
-                                                    { value: "Thiruvanathapuram", label: "Thiruvanathapuram" },
-                                                    { value: "Kollam", label: "Kollam" },
-                                                    { value: "Ernakulam", label: "Ernakulam" },
-                                                    { value: "kannur", label: "kannur" }
-                                                ]}
-                                                searchable={true}
-                                            />
-                                        </div>
-
-                                        {/* Pincode */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                                Pincode <span className="text-red-500">*</span>
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={pincode}
-                                                onChange={(e) => setPincode(e.target.value)}
-                                                placeholder="Enter pincode"
-                                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                                            />
-                                        </div>
-
-                                        {/* Landmark */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                                Landmark <span className="text-red-500">*</span>
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={landmark}
-                                                onChange={(e) => setLandmark(e.target.value)}
-                                                placeholder="Enter landmark"
-                                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Enquiry Details Section */}
-                            <div className="p-6 border-b border-gray-200">
-                                <h3 className="text-lg font-semibold text-gray-800 mb-6 flex items-center">
-                                    <span className="w-2 h-6 bg-purple-500 rounded-full mr-3"></span>
-                                    Enquiry Details
-                                </h3>
-
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    {/* Enquiry Source */}
-                                    <div className="">
-                                        <Dropdowns
-                                            label="Enquiry Source"
-                                            value={enquirySource}
-                                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                                                setEnquirySource(e.target.value);
-                                                if (e.target.value !== "Other") setCustomEnquirySource("");
-                                            }}
-                                            options={[
-                                                { value: "Phone", label: "Phone" },
-                                                { value: "Email", label: "Email" },
-                                                { value: "Website", label: "Website" },
-                                                { value: "Walk-in", label: "Walk-in" },
-                                                { value: "Other", label: "Other" }
-                                            ]}
-                                            searchable={true}
-                                        />
-                                        {enquirySource === "Other" && (
-                                            <div className="mt-2">
-                                                <input
-                                                    type="text"
-                                                    placeholder="Specify source"
-                                                    value={customEnquirySource}
-                                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomEnquirySource(e.target.value)}
-                                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Enquiry Category */}
-                                    <div className="">
-                                        <Dropdowns
-                                            label="Enquiry Category"
-                                            value={enquiryCategory}
-                                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                                                setEnquiryCategory(e.target.value);
-                                                if (e.target.value !== "Other") setCustomEnquiryCategory("");
-                                            }}
-                                            options={[
-                                                { value: "Complaint", label: "Complaint" },
-                                                { value: "Request", label: "Request" },
-                                                { value: "Feedback", label: "Feedback" },
-                                                { value: "Query", label: "Query" },
-                                                { value: "Other", label: "Other" }
-                                            ]}
-                                            searchable={true}
-                                        />
-                                        {enquiryCategory === "Other" && (
-                                            <div className="mt-2">
-                                                <input
-                                                    type="text"
-                                                    placeholder="Specify category"
-                                                    value={customEnquiryCategory}
-                                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomEnquiryCategory(e.target.value)}
-                                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Service Type */}
-                                    <div className="">
-                                        <Dropdowns
-                                            label="Service Type"
-                                            value={serviceType}
-                                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                                                setServiceType(e.target.value);
-                                                if (e.target.value !== "Other") setCustomServiceType("");
-                                            }}
-                                            options={[
-                                                { value: "CMS", label: "CMS - cockroach management system" },
-                                                { value: "Support", label: "Support" },
-                                                { value: "Installation", label: "Installation" },
-                                                { value: "Maintenance", label: "Maintenance" },
-                                                { value: "Other", label: "Other" }
-                                            ]}
-                                            searchable={true}
-                                        />
-                                        {serviceType === "Other" && (
-                                            <div className="mt-2">
-                                                <input
-                                                    type="text"
-                                                    placeholder="Specify service type"
-                                                    value={customServiceType}
-                                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomServiceType(e.target.value)}
-                                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Urgency */}
-                                    <div className="">
-                                        <Dropdowns
-                                            label="Urgency"
-                                            value={urgency}
-                                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setUrgency(e.target.value)}
-                                            options={[
-                                                { value: "Low", label: "Low" },
-                                                { value: "Medium", label: "Medium" },
-                                                { value: "High", label: "High" },
-                                                { value: "Critical", label: "Critical" }
-                                            ]}
-                                            searchable={true}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Additional Information Section */}
-                            <div className="p-6">
-                                <h3 className="text-lg font-semibold text-gray-800 mb-6 flex items-center">
-                                    <span className="w-2 h-6 bg-amber-500 rounded-full mr-3"></span>
-                                    Additional Information
-                                </h3>
-
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    {/* Property Size */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                            Property Size <span className="text-red-500">*</span>
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={propertySize}
-                                            onChange={(e) => setPropertySize(e.target.value)}
-                                            placeholder="Enter property size"
-                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                                        />
-                                    </div>
-
-                                    {/* Number Of Rooms */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                            Number Of Rooms
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={rooms}
-                                            onChange={(e) => setRooms(e.target.value)}
-                                            placeholder="Enter number of rooms"
-                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                                        />
-                                    </div>
-
-                                    {/* Pest Type */}
-                                    <div className="relative">
-                                        <Dropdowns
-                                            label="Pest Type"
-                                            value={pestType}
-                                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                                                setPestType(e.target.value);
-                                                if (e.target.value !== "Other") setCustomPestType("");
-                                            }}
-                                            options={[
-                                                { value: "Termites", label: "Termites" },
-                                                { value: "Rodents", label: "Rodents" },
-                                                { value: "Cockroaches", label: "Cockroaches" },
-                                                { value: "Bed Bugs", label: "Bed Bugs" },
-                                                { value: "Other", label: "Other" }
-                                            ]}
-                                            searchable={true}
-                                        />
-                                        {pestType === "Other" && (
-                                            <div className="mt-2">
-                                                <input
-                                                    type="text"
-                                                    placeholder="Specify pest type"
-                                                    value={customPestType}
-                                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomPestType(e.target.value)}
-                                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Budget Range */}
-                                    <div className="relative">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                            Budget Range
-                                        </label>
-                                        <div className="relative">
-                                            <input
-                                                type="text"
-                                                value={budget}
-                                                onChange={(e) => setBudget(e.target.value)}
-                                                placeholder="Enter budget range"
-                                                className="w-full px-4 py-2.5 pl-4 pr-10 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Preferred Service Date */}
-                                    <div className="relative">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                            Preferred Service Date
-                                        </label>
-                                        <div className="relative">
-                                            <input
-                                                type="date"
-                                                value={preferredDate}
-                                                onChange={(e) => setPreferredDate(e.target.value)}
-                                                className="w-full px-4 py-2.5 pl-4 pr-10 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                                            />
-                                            <FiCalendar className="absolute right-3 top-3.5 text-gray-400" />
-                                        </div>
-                                    </div>
-
-                                    {/* Attend Dropdown */}
-                                    <div className="">
-                                        <Dropdowns
-                                            label="Attend by"
-                                            value={attend}
-                                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setAttend(e.target.value)}
-                                            options={[
-                                                { value: "", label: "Select option" },
-                                                { value: "A", label: "Aswanth" },
-                                                { value: "B", label: "ueena" },
-                                                { value: "D", label: "meena" },
-                                                { value: "U", label: "peena" },
-                                                { value: "E", label: "Option 5" },
-                                                { value: "F", label: "Option 6" },
-                                                { value: "G", label: "Option 7" },
-                                                { value: "H", label: "Option 8" },
-                                                { value: "I", label: "Option 9" },
-                                                { value: "J", label: "Option 10" },
-                                            ]}
-                                            searchable={true}
-                                        />
-                                    </div>
-
-                                    {/* Assign Dropdown */}
-                                    <div className="">
-                                        <Dropdowns
-                                            label="Assign to"
-                                            value={assign}
-                                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setAssign(e.target.value)}
-                                            options={[
-                                                { value: "", label: "Select option" },
-                                                { value: "A", label: "Adhithya" },
-                                                { value: "B", label: "Banu" },
-                                                { value: "E", label: "Option 5" },
-                                                { value: "F", label: "Option 6" },
-                                                { value: "G", label: "Option 7" },
-                                                { value: "H", label: "Option 8" },
-                                                { value: "I", label: "Option 9" },
-                                                { value: "J", label: "Option 10" },
-                                            ]}
-                                            searchable={true}
-                                        />
-                                    </div>
-
-                                    {/* Additional Notes */}
-                                    <div className="relative">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                            Additional Notes
-                                        </label>
-                                        <div className="relative">
-                                            <textarea
-                                                value={notes}
-                                                onChange={(e) => setNotes(e.target.value)}
-                                                placeholder="Enter additional notes"
-                                                rows={3}
-                                                className="w-full px-4 py-2.5 pl-4 pr-10 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                                            ></textarea>
-                                            <FiInfo className="absolute right-3 top-3.5 text-gray-400" />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="mb-6 md:col-span-3 py-2 px-7">
-                                <label className="flex items-center space-x-2">
-                                    <input
-                                        type="checkbox"
-                                        checked={formData.inspectionNeeded}
-                                        onChange={handleCheckboxChange}
-                                        className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
-                                    />
-                                    <span className="text-gray-700">Inspection needed</span>
-                                </label>
-                            </div>
-
-                            {formData.inspectionNeeded ? (
-                                <div className="mb-6 p-4 bg-white-50 border border-green-200 rounded-lg md:col-span-3">
-                                               <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-lg font-semibold text-gray-800 mb-6 flex items-center">
-                                    <span className="w-2 h-6 bg-blue-500 rounded-full mr-3"></span>
-                                    Inspection Details
-                                </h3>
-                                <span className="inline-flex items-center gap-4 bg-gray-50 rounded-full px-4 py-2 text-sm border border-gray-200 shadow-xs">
-                                    
-                                    <span className="h-4 w-px bg-gray-300"></span>
-                               
-                                </span>
-                            </div>
-                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                {/* Inspection Date */}
-                                <div className="relative">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                        Inspection Date <span className="text-red-500">*</span>
-                                    </label>
-                                    <div className="relative">
-                                        <input
-                                            type="date"
-                                            name="inspectionDate"
-                                            // value={inspectionData.inspectionDate}
-                                            // onChange={handleInspectionChange}
-                                            className="w-full px-4 py-2.5 pl-4 pr-10 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                                        />
-                                        <FiCalendar className="absolute right-3 top-3.5 text-gray-400" />
-                                    </div>
-                                </div>
-
-                                {/* Inspection Time */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                        Inspection Time <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="time"
-                                        name="inspectionTime"
-                                        // value={inspectionData.inspectionTime}
-                                        // onChange={handleInspectionChange}
-                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                                    />
-                                </div>
-
-                                {/* Inspection Type */}
-                                <div className="relative">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                        Inspection Type <span className="text-red-500">*</span>
-                                    </label>
-                                    <select
-                                        name="inspectionType"
-                                        // value={inspectionData.inspectionType}
-                                        // onChange={handleInspectionChange}
-                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent appearance-none bg-no-repeat pr-10"
-                                    >
-                                        <option value="pre_service">Pre-Service</option>
-                                        <option value="technical_assessment">Technical Assessment</option>
-                                        <option value="site_survey">Site Survey</option>
-                                    </select>
-                                </div>
-
-                                {/* Technical Team Lead */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                        Technical Team Lead <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="technicalTeamLead"
-                                        // value={inspectionData.technicalTeamLead}
-                                        // onChange={handleInspectionChange}
-                                        placeholder="Enter team lead name"
-                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                                    />
-                                </div>
-
-                                {/* Estimated Duration */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                        Estimated Duration (hours) <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="number"
-                                        name="estimatedDuration"
-                                        // value={inspectionData.estimatedDuration}
-                                        // onChange={handleInspectionChange}
-                                        placeholder="Enter duration in hours"
-                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                                    />
-                                </div>
-
-                                {/* Inspection Status */}
-                                <div className="relative">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                        Inspection Status <span className="text-red-500">*</span>
-                                    </label>
-                                    <select
-                                        name="inspectionStatus"
-                                        // value={inspectionData.inspectionStatus}
-                                        // onChange={handleInspectionChange}
-                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent appearance-none bg-no-repeat pr-10"
-                                    >
-                                        <option value="scheduled">Scheduled</option>
-                                        <option value="in_progress">In Progress</option>
-                                        <option value="completed">Completed</option>
-                                        <option value="cancelled">Cancelled</option>
-                                    </select>
-                                </div>
-                                
-                            </div>
-                            
-                                </div>
-                            ) : (
-                                <div className="space-y-4 md:col-span-3">
-                                    {/* <h3 className="font-medium text-gray-700">Basic Mandatory Forms</h3> */}
-                                </div>
-                            )}
-
-                            {isSubmitted && !formData.inspectionNeeded && (
-                                <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg md:col-span-3">
-                        
-                                </div>
-                            )}
-                        </>
-                    )}
-                </div>
-
-                <div className='mt-4 py-4 px-2'> 
-                    <FormButtons
-                        // onCancel={handleCancel}
-                      
-                    />
-                </div>
-            </div>
+            <button
+              onClick={() => navigate("/product-management-list")}
+              className={`px-4 py-2 rounded-lg ${darkMode ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
+            >
+              Back to List
+            </button>
+          </div>
         </div>
-    );
+
+        {/* Error and Success Messages */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <p className="text-red-600 dark:text-red-400">{error}</p>
+          </div>
+        )}
+
+        {success && (
+          <div className="mb-6 p-4 bg-green-100 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+            <p className="text-green-600 dark:text-green-400">{success}</p>
+          </div>
+        )}
+
+        {/* Main Form */}
+        <form onSubmit={handleSubmit}>
+          <div className={`rounded-lg shadow ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+            {/* Basic Information Section */}
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className={`text-lg font-semibold mb-6 flex items-center ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                <span className="w-2 h-6 bg-blue-500 rounded-full mr-3"></span>
+                Basic Information
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Product Name */}
+                <div>
+                  <label className={`block text-sm font-medium mb-1.5 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Product Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    placeholder="Enter product name"
+                    className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      formErrors.name 
+                        ? 'border-red-500 focus:ring-red-500' 
+                        : 'border-gray-300 dark:border-gray-600 focus:border-transparent'
+                    } ${darkMode ? 'bg-gray-700 text-white' : 'bg-white text-gray-900'}`}
+                  />
+                  {formErrors.name && (
+                    <p className="text-red-500 text-sm mt-1">{formErrors.name}</p>
+                  )}
+                </div>
+
+                {/* Category */}
+                <div>
+                  <label className={`block text-sm font-medium mb-1.5 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Category <span className="text-red-500">*</span>
+                  </label>
+                  {categoriesLoading ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+                      <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Loading categories...</span>
+                    </div>
+                  ) : (
+                    <select
+                      name="category"
+                      value={formData.category}
+                      onChange={handleInputChange}
+                      className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        formErrors.category 
+                          ? 'border-red-500 focus:ring-red-500' 
+                          : 'border-gray-300 dark:border-gray-600 focus:border-transparent'
+                      } ${darkMode ? 'bg-gray-700 text-white' : 'bg-white text-gray-900'}`}
+                    >
+                      <option value="">Select Category</option>
+                      {categories.map(category => (
+                        <option key={category._id} value={category._id}>
+                          {category.categoryName} ({category.code})
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  {formErrors.category && (
+                    <p className="text-red-500 text-sm mt-1">{formErrors.category}</p>
+                  )}
+                </div>
+
+                {/* Description */}
+                <div className="md:col-span-2">
+                  <label className={`block text-sm font-medium mb-1.5 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Description <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    placeholder="Enter product description"
+                    rows={3}
+                    className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      formErrors.description 
+                        ? 'border-red-500 focus:ring-red-500' 
+                        : 'border-gray-300 dark:border-gray-600 focus:border-transparent'
+                    } ${darkMode ? 'bg-gray-700 text-white' : 'bg-white text-gray-900'}`}
+                  />
+                  {formErrors.description && (
+                    <p className="text-red-500 text-sm mt-1">{formErrors.description}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Pricing & Stock Section */}
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className={`text-lg font-semibold mb-6 flex items-center ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                <span className="w-2 h-6 bg-green-500 rounded-full mr-3"></span>
+                Pricing & Stock
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {/* Stock */}
+                <div>
+                  <label className={`block text-sm font-medium mb-1.5 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Stock Quantity
+                  </label>
+                  <input
+                    type="number"
+                    name="stock"
+                    value={formData.stock}
+                    onChange={handleInputChange}
+                    min="0"
+                    className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      formErrors.stock 
+                        ? 'border-red-500 focus:ring-red-500' 
+                        : 'border-gray-300 dark:border-gray-600 focus:border-transparent'
+                    } ${darkMode ? 'bg-gray-700 text-white' : 'bg-white text-gray-900'}`}
+                  />
+                  {formErrors.stock && (
+                    <p className="text-red-500 text-sm mt-1">{formErrors.stock}</p>
+                  )}
+                </div>
+
+                {/* Price */}
+                <div>
+                  <label className={`block text-sm font-medium mb-1.5 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Price (₹) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    name="price"
+                    value={formData.price}
+                    onChange={handleInputChange}
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      formErrors.price 
+                        ? 'border-red-500 focus:ring-red-500' 
+                        : 'border-gray-300 dark:border-gray-600 focus:border-transparent'
+                    } ${darkMode ? 'bg-gray-700 text-white' : 'bg-white text-gray-900'}`}
+                  />
+                  {formErrors.price && (
+                    <p className="text-red-500 text-sm mt-1">{formErrors.price}</p>
+                  )}
+                </div>
+
+                {/* Discount */}
+                <div>
+                  <label className={`block text-sm font-medium mb-1.5 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Discount (%)
+                  </label>
+                  <input
+                    type="number"
+                    name="discount"
+                    value={formData.discount}
+                    onChange={handleInputChange}
+                    min="0"
+                    max="100"
+                    placeholder="0"
+                    className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      formErrors.discount 
+                        ? 'border-red-500 focus:ring-red-500' 
+                        : 'border-gray-300 dark:border-gray-600 focus:border-transparent'
+                    } ${darkMode ? 'bg-gray-700 text-white' : 'bg-white text-gray-900'}`}
+                  />
+                  {formErrors.discount && (
+                    <p className="text-red-500 text-sm mt-1">{formErrors.discount}</p>
+                  )}
+                </div>
+
+                {/* Status */}
+                <div>
+                  <label className={`block text-sm font-medium mb-1.5 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Status
+                  </label>
+                  <select
+                    name="productStatus"
+                    value={formData.productStatus}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-300 dark:border-gray-600 focus:border-transparent ${
+                      darkMode ? 'bg-gray-700 text-white' : 'bg-white text-gray-900'
+                    }`}
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Product Images Section */}
+            <div className="p-6">
+              <h3 className={`text-lg font-semibold mb-6 flex items-center ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                <span className="w-2 h-6 bg-purple-500 rounded-full mr-3"></span>
+                Product Images <span className="text-red-500">*</span>
+                <span className={`text-sm font-normal ml-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  (Max 5 images, 5MB each)
+                </span>
+              </h3>
+
+              {formErrors.images && (
+                <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <p className="text-red-500 dark:text-red-400">{formErrors.images}</p>
+                </div>
+              )}
+
+              {/* Image Upload Area */}
+              <div className="mb-6">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleImageUpload}
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                />
+                
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                    darkMode 
+                      ? 'border-gray-600 hover:border-gray-500 bg-gray-800/50 hover:bg-gray-800' 
+                      : 'border-gray-300 hover:border-gray-400 bg-gray-50 hover:bg-gray-100'
+                  }`}
+                >
+                  <div className="flex flex-col items-center justify-center">
+                    <FiUpload className={`h-12 w-12 mb-3 ${darkMode ? 'text-gray-400' : 'text-gray-400'}`} />
+                    <p className={`text-lg font-medium mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      Click to upload images
+                    </p>
+                    <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                      PNG, JPG, GIF up to 5MB
+                    </p>
+                    <button
+                      type="button"
+                      className={`mt-4 px-4 py-2 rounded-lg flex items-center gap-2 ${
+                        darkMode 
+                          ? 'bg-gray-700 hover:bg-gray-600 text-white' 
+                          : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                      }`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        fileInputRef.current?.click();
+                      }}
+                    >
+                      <FiUpload />
+                      Browse Files
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Image Previews */}
+              {imagePreviews.length > 0 && (
+                <div>
+                  <h4 className={`text-sm font-medium mb-4 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Selected Images ({images.length}/5)
+                  </h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                    {imagePreviews.map((preview, index) => (
+                      <div key={index} className="relative group">
+                        <div className="aspect-square rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                          <img
+                            src={preview}
+                            alt={`Product preview ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeImage(index)}
+                          className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <FiX size={16} />
+                        </button>
+                        <div className="mt-2 text-xs text-center text-gray-500 dark:text-gray-400">
+                          {images[index]?.name}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Form Actions */}
+          <div className="mt-6 flex justify-end space-x-4">
+            <button
+              type="button"
+              onClick={handleCancel}
+              disabled={loading}
+              className={`px-6 py-3 rounded-lg font-medium ${
+                darkMode 
+                  ? 'bg-gray-700 hover:bg-gray-600 text-white' 
+                  : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading || categoriesLoading}
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  Creating Product...
+                </>
+              ) : (
+                <>
+                  <FiPackage />
+                  Create Product
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
 }
 
 export default ProductManagementAdd;

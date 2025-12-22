@@ -1,756 +1,527 @@
-import React, { useState } from "react";
-import { FiChevronUp, FiChevronDown } from "react-icons/fi";
-import FilterButton from "@/pages/components/FilterButton";
-import ExportButton from "@/pages/components/ExportButton";
-import HeaderDate from "@/pages/components/HeaderDate";
-import HeaderComponent from "@/pages/components/HeaderComponent";
-import ActionButton from "@/pages/components/ActionButton";
-import TableList from "@/pages/components/TableList";
-import Loading from "@/pages/components/Loading";
-import SearchButton from "@/pages/components/SearchButton";
+// src/pages/categoryManagement/CategoryManagementList.tsx
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { FiEye, FiEdit2, FiTrash2, FiPlus, FiSearch, FiFilter, FiDownload } from "react-icons/fi";
+import { useDarkMode } from "@/contexts/DarkModeContext";
+import { categoryService, Category, CategoryFilters } from "@/services/categoryService";
+import Loading from "@/components/Loading";
 
-interface Enquiry {
-  id: number;
-  customerName: string;
-  phone: string;
-  email: string;
-  alternatePhone: string;
-  street: string;
-  area: string;
-  city: string;
-  state: string;
-  pincode: string;
-  landmark: string;
-  coordinates: string;
-  propertySize: string;
-  numberOfRooms: number;
-  pestType: string;
-  previousTreatment: string;
-  previousTreatmentDetails: string;
-  budgetRange: string;
-  preferredServiceDate: string;
-  additionalNotes: string;
-  createdDate: string;
-  status: "complaint" | "Sales";
-}
-
-interface SortConfig {
-  key: keyof Enquiry | null;
-  direction: "ascending" | "descending";
-}
-
-function CategoryManagementList() {
-  // Sample data with proper typing
-  const initialEnquiries: Enquiry[] = [
-    {
-      id: 1,
-      customerName: "Aswanth",
-      phone: "+1 555-123-4567",
-      email: "john@example.com",
-      alternatePhone: "+1 555-987-6543",
-      street: "123 Main St",
-      area: "Downtown",
-      city: "Metropolis",
-      state: "NY",
-      pincode: "10001",
-      landmark: "Near Central Park",
-      coordinates: "40.7128° N, 74.0060° W",
-      propertySize: "1500 sqft",
-      numberOfRooms: 3,
-      pestType: "Residential",
-      previousTreatment: "Yes",
-      previousTreatmentDetails: "Spray treatment 3 months ago",
-      budgetRange: "$100-$200",
-      preferredServiceDate: "Thiruvanathapuram",
-      additionalNotes: "Pet friendly treatment preferred",
-      status: "complaint",
-      createdDate: "2023-05-20",
-    },
-    {
-      id: 2,
-      customerName: "Jane Smith",
-      phone: "+1 555-234-5678",
-      email: "jane@example.com",
-      alternatePhone: "+1 555-876-5432",
-      street: "456 Oak Ave",
-      area: "Uptown",
-      city: "Gotham",
-      state: "NJ",
-      pincode: "07001",
-      landmark: "Near City Hall",
-      coordinates: "40.7357° N, 74.1724° W",
-      propertySize: "2000 sqft",
-      numberOfRooms: 4,
-      pestType: "Residential",
-      previousTreatment: "No",
-      previousTreatmentDetails: "",
-      budgetRange: "$200-$300",
-      preferredServiceDate: "Kollam",
-      additionalNotes: "Basement infestation",
-      status: "Sales",
-      createdDate: "2023-05-18",
-    },
-  ];
-
-  const [enquiries, setEnquiries] = useState<Enquiry[]>(initialEnquiries);
-  const [sortConfig, setSortConfig] = useState<SortConfig>({
-    key: null,
-    direction: "ascending",
+const CategoryManagementList: React.FC = () => {
+  const { darkMode } = useDarkMode();
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filters, setFilters] = useState<CategoryFilters>({
+    page: 1,
+    limit: 10,
+    search: "",
+    status: undefined,
+    sortBy: "createdAt",
+    sortOrder: "desc",
   });
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    totalRecords: 0,
+    totalPages: 0,
+  });
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
-  const requestSort = (key: keyof Enquiry) => {
-    let direction: "ascending" | "descending" = "ascending";
-    if (sortConfig.key === key && sortConfig.direction === "ascending") {
-      direction = "descending";
+  // Fetch categories
+  const fetchCategories = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await categoryService.getAllCategories(filters);
+      setCategories(response.data.data);
+      setPagination({
+        page: response.data.page,
+        limit: response.data.limit,
+        totalRecords: response.data.totalRecords,
+        totalPages: response.data.totalPages,
+      });
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to fetch categories");
+      console.error("Error fetching categories:", err);
+    } finally {
+      setLoading(false);
     }
-    setSortConfig({ key, direction });
-
-    const sortedData = [...enquiries].sort((a, b) => {
-      // Handle cases where values might be undefined
-      const aValue = a[key];
-      const bValue = b[key];
-
-      if (aValue === undefined || bValue === undefined) return 0;
-      if (aValue < bValue) return direction === "ascending" ? -1 : 1;
-      if (aValue > bValue) return direction === "ascending" ? 1 : -1;
-      return 0;
-    });
-
-    setEnquiries(sortedData);
   };
 
-  const getSortIcon = (key: keyof Enquiry): JSX.Element | null => {
-    if (sortConfig.key !== key) return null;
-    return sortConfig.direction === "ascending" ? (
-      <FiChevronUp className="ml-1" />
-    ) : (
-      <FiChevronDown className="ml-1" />
+  useEffect(() => {
+    fetchCategories();
+  }, [filters]);
+
+  // Handle search
+  const handleSearch = () => {
+    setFilters(prev => ({
+      ...prev,
+      search: searchQuery,
+      page: 1, // Reset to first page on new search
+    }));
+  };
+
+  // Handle search input change
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    if (e.target.value === "") {
+      setFilters(prev => ({
+        ...prev,
+        search: "",
+        page: 1,
+      }));
+    }
+  };
+
+  // Handle search on Enter key
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
+
+  // Handle filter change
+  const handleFilterChange = (key: keyof CategoryFilters, value: any) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value,
+      page: 1, // Reset to first page on filter change
+    }));
+  };
+
+  // Handle page change
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= pagination.totalPages) {
+      setFilters(prev => ({ ...prev, page: newPage }));
+    }
+  };
+
+  // Handle category selection
+  const handleSelectCategory = (categoryId: string) => {
+    setSelectedCategories(prev =>
+      prev.includes(categoryId)
+        ? prev.filter(id => id !== categoryId)
+        : [...prev, categoryId]
     );
   };
-  const handleSearch = (query: string) => {
-    if (query.trim() === "") {
-      setEnquiries(initialEnquiries);
+
+  // Handle select all
+  const handleSelectAll = () => {
+    if (selectedCategories.length === categories.length) {
+      setSelectedCategories([]);
     } else {
-      const filtered = initialEnquiries.filter(
-        (enquiry) =>
-          enquiry.customerName.toLowerCase().includes(query.toLowerCase()) ||
-          enquiry.phone.includes(query) ||
-          enquiry.email.toLowerCase().includes(query.toLowerCase())
-      );
-      setEnquiries(filtered);
+      setSelectedCategories(categories.map(category => category._id));
     }
   };
+
+  // Handle delete category
+  const handleDeleteCategory = async (categoryId: string) => {
+    if (window.confirm("Are you sure you want to delete this category?")) {
+      try {
+        await categoryService.deleteCategory(categoryId);
+        fetchCategories(); // Refresh list
+        setSelectedCategories(prev => prev.filter(id => id !== categoryId));
+      } catch (err: any) {
+        alert(err.response?.data?.message || "Failed to delete category");
+      }
+    }
+  };
+
+  // Handle status change
+  const handleStatusChange = async (categoryId: string, currentStatus: 'active' | 'inactive') => {
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+    try {
+      await categoryService.updateCategoryStatus(categoryId, newStatus);
+      fetchCategories(); // Refresh list
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Failed to update status");
+    }
+  };
+
+  // Handle export
+  const handleExport = () => {
+    // Implement export functionality
+    console.log("Exporting categories:", selectedCategories);
+  };
+
+  if (loading) {
+    return <Loading />;
+  }
+
   return (
-    <>
-      <div className="container mx-auto bg-gray-150  border-b border-gray-200">
-        <div className=" flex items-center justify-between bg-gray-150 p-4">
-          <h2 className="text-xl font-bold text-black-800 flex items-center">
-            <span className="text-gray-600 text-[18px] mr-2">
-              Lead Management
-            </span>
-          </h2>
-          <div className="flex items-center space-x-2">
-            <HeaderDate />
+    <div className={`min-h-screen ${darkMode ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
+      <div className="container mx-auto px-4 py-6">
+        {/* Header */}
+        <div className={`mb-6 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+          <h1 className="text-2xl font-bold mb-2">Category Management</h1>
+          <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+            <Link to="/dashboard" className="hover:text-blue-600 dark:hover:text-blue-400">
+              Dashboard
+            </Link>
+            <span className="mx-2">/</span>
+            <Link to="/category-management-list" className="hover:text-blue-600 dark:hover:text-blue-400">
+              Category Management
+            </Link>
+            <span className="mx-2">/</span>
+            <span className="text-gray-400 dark:text-gray-500">List</span>
           </div>
         </div>
 
-        <div className="container mx-auto px-2">
-          <HeaderComponent
-            title="Enquiry List"
-            breadcrumb="Dashboard / Enquiry / List"
-            className="mb-4"
-            showBackButton={true}
-            showAddButton={true}
-            addButtonLink="/enquiry-management"
-          />
-          <div
-            className={`w-full relative rounded-2xl p-5 flex items-center justify-between overflow-hidden mb-4 bg-white border border-gray-200 shadow-md`}
-          >
-            {" "}
-            <div className="flex space-x-2">
-              <ExportButton />
-              <FilterButton />
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className={`rounded-lg p-4 shadow ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Total Categories</p>
+                <p className="text-2xl font-bold mt-1">{pagination.totalRecords}</p>
+              </div>
+              <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                <span className="text-blue-600 dark:text-blue-400 text-lg">📁</span>
+              </div>
             </div>
-            {/* Right-side buttons (example) */}
-            <div className="flex space-x-2">
-              <SearchButton onSearch={handleSearch} />
+          </div>
+
+          <div className={`rounded-lg p-4 shadow ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Active</p>
+                <p className="text-2xl font-bold mt-1 text-green-600 dark:text-green-400">
+                  {categories.filter(c => c.categoryStatus === 'active').length}
+                </p>
+              </div>
+              <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                <span className="text-green-600 dark:text-green-400 text-lg">✓</span>
+              </div>
             </div>
-          </div>{" "}
-          <TableList
-            columns={[
-              {
-                key: "id",
-                header: "SL No",
+          </div>
 
-                className: "w-16",
-              },
-              {
-                key: "actions",
-                header: "Actions",
-                className: "w-15",
-                render: (enquiry) => (
-                  <ActionButton
-                    view={true}
-                    edit={true}
-                    delete={true}
-                    viewLink={`/enquiry-management/view`}
-                    editLink={`/enquiry-management/edit`}
-                    deleteLink={`/enquiry-management/delete/${enquiry.id}`}
-                  />
-                ),
-              },
-              {
-                key: "status",
-                header: "Status",
-                className: "min-w-[150px]",
-                render: (enquiry) => {
-                  const [isOpen, setIsOpen] = useState(false);
-                  const [lastUpdated] = useState(new Date().toLocaleString());
-                  const [assignedTo] = useState("John Smith");
-                  const [notes] = useState("Customer requested callback");
-                  const [urgency, setUrgency] = useState<
-                    "low" | "medium" | "high"
-                  >("medium");
+          <div className={`rounded-lg p-4 shadow ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Inactive</p>
+                <p className="text-2xl font-bold mt-1 text-red-600 dark:text-red-400">
+                  {categories.filter(c => c.categoryStatus === 'inactive').length}
+                </p>
+              </div>
+              <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">
+                <span className="text-red-600 dark:text-red-400 text-lg">✗</span>
+              </div>
+            </div>
+          </div>
 
-                  const handleStatusChange = (
-                    newStatus: "complaint" | "Sales"
-                  ) => {
-                    setEnquiries((prevEnquiries) =>
-                      prevEnquiries.map((e) =>
-                        e.id === enquiry.id ? { ...e, status: newStatus } : e
-                      )
-                    );
-                  };
+          <div className={`rounded-lg p-4 shadow ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Default</p>
+                <p className="text-2xl font-bold mt-1 text-purple-600 dark:text-purple-400">
+                  {categories.filter(c => c.isDefault).length}
+                </p>
+              </div>
+              <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+                <span className="text-purple-600 dark:text-purple-400 text-lg">⭐</span>
+              </div>
+            </div>
+          </div>
+        </div>
 
-                  const handleUrgencyChange = (
-                    newUrgency: "low" | "medium" | "high"
-                  ) => {
-                    setUrgency(newUrgency);
-                  };
+        {/* Toolbar */}
+        <div className={`rounded-lg p-4 shadow mb-6 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            {/* Search */}
+            <div className="relative flex-1">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <FiSearch className={`h-5 w-5 ${darkMode ? 'text-gray-400' : 'text-gray-400'}`} />
+              </div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={handleSearchChange}
+                onKeyPress={handleKeyPress}
+                placeholder="Search categories..."
+                className={`block w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  darkMode 
+                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                    : 'border-gray-300 text-gray-900 placeholder-gray-500'
+                }`}
+              />
+            </div>
 
-                  return (
-                    <div
-                      className="relative inline-block text-left"
-                      onMouseEnter={() => setIsOpen(true)}
-                      onMouseLeave={() => setIsOpen(false)}
-                    >
-                      {/* Status Button */}
-                      <button
-                        type="button"
-                        className={`group relative inline-flex items-center justify-between w-full px-2.5 py-1.5 text-xs font-medium rounded-full transition-all duration-200 ease-out ${
-                          enquiry.status === "complaint"
-                            ? "bg-green-50 text-green-700 hover:bg-green-100 border border-green-200"
-                            : "bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200"
-                        }`}
-                      >
-                        {/* Glow effect (smaller) */}
-                        <span
-                          className={`absolute -inset-0.25 rounded-full opacity-0 group-hover:opacity-50 blur-[2px] transition duration-200 ${
-                            enquiry.status === "complaint"
-                              ? "bg-green-200"
-                              : "bg-blue-200"
-                          }`}
-                        ></span>
+            {/* Filters and Actions */}
+            <div className="flex items-center gap-2">
+              {/* Status Filter */}
+              <select
+                value={filters.status || ''}
+                onChange={(e) => handleFilterChange('status', e.target.value || undefined)}
+                className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  darkMode 
+                    ? 'bg-gray-700 border-gray-600 text-white' 
+                    : 'border-gray-300 text-gray-900'
+                }`}
+              >
+                <option value="">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
 
-                        <div className="flex items-center space-x-1.5 relative">
-                          {/* Compact status indicator */}
-                          <span className="relative flex h-2 w-2">
-                            <span
-                              className={`absolute inline-flex h-full w-full rounded-full ${
-                                enquiry.status === "complaint"
-                                  ? "bg-green-500 group-hover:bg-green-600 animate-pulse"
-                                  : "bg-blue-500 group-hover:bg-blue-600 animate-pulse"
-                              }`}
-                            ></span>
-                            <span
-                              className={`relative inline-flex rounded-full h-2 w-2 ${
-                                enquiry.status === "complaint"
-                                  ? "bg-green-600"
-                                  : "bg-blue-600"
-                              }`}
-                            ></span>
-                          </span>
+              {/* Sort By */}
+              <select
+                value={filters.sortBy}
+                onChange={(e) => handleFilterChange('sortBy', e.target.value)}
+                className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  darkMode 
+                    ? 'bg-gray-700 border-gray-600 text-white' 
+                    : 'border-gray-300 text-gray-900'
+                }`}
+              >
+                <option value="createdAt">Date Created</option>
+                <option value="categoryName">Name</option>
+                <option value="code">Code</option>
+              </select>
 
-                          {/* Status text */}
-                          <span className="capitalize text-[0.7rem] tracking-tight">
-                            {enquiry.status}
-                          </span>
+              {/* Export Button */}
+              {selectedCategories.length > 0 && (
+                <button
+                  onClick={handleExport}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  <FiDownload />
+                  Export ({selectedCategories.length})
+                </button>
+              )}
+
+              {/* Add New Button */}
+              <Link
+                to="/category-management"
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <FiPlus />
+                Add Category
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <p className="text-red-600 dark:text-red-400">{error}</p>
+          </div>
+        )}
+
+        {/* Categories Table */}
+        <div className={`rounded-lg shadow overflow-hidden ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className={`${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                    <input
+                      type="checkbox"
+                      checked={selectedCategories.length === categories.length && categories.length > 0}
+                      onChange={handleSelectAll}
+                      className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+                    />
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                    Category
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                    Code
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                    Description
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                    Created Date
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className={`divide-y divide-gray-200 dark:divide-gray-700 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                {categories.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-12 text-center">
+                      <div className="flex flex-col items-center justify-center">
+                        <div className="w-16 h-16 mb-4 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                          <span className="text-2xl">📁</span>
                         </div>
-
-                        {/* Smaller chevron */}
-                        <svg
-                          className={`ml-1 h-3 w-3 transition-transform duration-200 ${
-                            isOpen ? "transform rotate-180" : ""
-                          } ${
-                            enquiry.status === "complaint"
-                              ? "text-green-600/80"
-                              : "text-blue-600/80"
-                          }`}
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      </button>
-
-                      {/* Enhanced Dropdown Panel */}
-                      {isOpen && (
-                        <div className="origin-top-left absolute left-0 mt-1 w-80 rounded-xl shadow-lg bg-white border border-gray-200 z-50 transition-all duration-200 ease-out">
-                          <div className="p-4 space-y-4">
-                            {/* Header with status indicator */}
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center">
-                                <span
-                                  className={`relative flex h-3 w-3 ${
-                                    enquiry.status === "complaint"
-                                      ? "text-green-500"
-                                      : enquiry.status === "Sales"
-                                      ? "text-blue-500"
-                                      : "text-purple-500"
-                                  }`}
-                                ></span>
-                                <h3 className="text-sm font-semibold text-gray-800">
-                                  Lead Details
-                                </h3>
-                              </div>
-                              <span
-                                className={`px-2.5 py-1 text-xs rounded-full font-medium ${
-                                  enquiry.status === "complaint"
-                                    ? "bg-green-100 text-green-800"
-                                    : enquiry.status === "Sales"
-                                    ? "bg-blue-100 text-blue-800"
-                                    : "bg-purple-100 text-purple-800"
-                                }`}
-                              >
-                                {enquiry.status}
+                        <p className={`text-lg font-medium ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>
+                          No categories found
+                        </p>
+                        <p className={`mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                          {filters.search ? 'Try a different search term' : 'Get started by creating a new category'}
+                        </p>
+                        {!filters.search && (
+                          <Link
+                            to="/category-management"
+                            className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                          >
+                            <FiPlus />
+                            Add Your First Category
+                          </Link>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  categories.map((category) => (
+                    <tr key={category._id} className={`hover:${darkMode ? 'bg-gray-700' : 'bg-gray-50'} transition-colors`}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <input
+                          type="checkbox"
+                          checked={selectedCategories.includes(category._id)}
+                          onChange={() => handleSelectCategory(category._id)}
+                          className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+                        />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="h-10 w-10 flex-shrink-0">
+                            <img
+                              className="h-10 w-10 rounded-lg object-cover"
+                              src={category.categoryImage}
+                              alt={category.categoryName}
+                            />
+                          </div>
+                          <div className="ml-4">
+                            <div className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                              {category.categoryName}
+                            </div>
+                            {category.isDefault && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                                Default
                               </span>
-                            </div>
-
-                            {/* Info Grid */}
-                            <div className="grid grid-cols-3 gap-y-3 gap-x-2 text-sm">
-                              <div className="text-gray-500 col-span-1">
-                                Assigned To:
-                              </div>
-                              <div className="font-medium col-span-2 text-gray-800">
-                                <span className="inline-flex items-center">
-                                  {assignedTo || (
-                                    <span className="text-gray-400">
-                                      Unassigned
-                                    </span>
-                                  )}
-                                </span>
-                              </div>
-
-                              <div className="text-gray-500 col-span-1">
-                                Assigned On:
-                              </div>
-                              <div className="font-medium col-span-2 text-gray-800">
-                                <span className="inline-flex items-center">
-                                  {new Date().toLocaleString()}
-                                  <svg
-                                    className="ml-1.5 h-3.5 w-3.5 text-gray-400"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                                    />
-                                  </svg>
-                                </span>
-                              </div>
-
-                              <div className="text-gray-500 col-span-1">
-                                Urgency:
-                              </div>
-                              <div className="font-medium col-span-2 text-gray-800">
-                                <div className="flex space-x-2">
-                                  <button
-                                    onClick={() => handleUrgencyChange("low")}
-                                    className={`px-2.5 py-1 text-xs rounded-full flex items-center transition-colors ${
-                                      urgency === "low"
-                                        ? "bg-green-50 text-green-700 border border-green-200 shadow-inner"
-                                        : "bg-gray-50 text-gray-500 hover:bg-gray-100"
-                                    }`}
-                                  >
-                                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 mr-1.5"></span>
-                                    Low
-                                  </button>
-                                  <button
-                                    onClick={() =>
-                                      handleUrgencyChange("medium")
-                                    }
-                                    className={`px-2.5 py-1 text-xs rounded-full flex items-center transition-colors ${
-                                      urgency === "medium"
-                                        ? "bg-yellow-50 text-yellow-700 border border-yellow-200 shadow-inner"
-                                        : "bg-gray-50 text-gray-500 hover:bg-gray-100"
-                                    }`}
-                                  >
-                                    <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 mr-1.5"></span>
-                                    Medium
-                                  </button>
-                                  <button
-                                    onClick={() => handleUrgencyChange("high")}
-                                    className={`px-2.5 py-1 text-xs rounded-full flex items-center transition-colors ${
-                                      urgency === "high"
-                                        ? "bg-red-50 text-red-700 border border-red-200 shadow-inner"
-                                        : "bg-gray-50 text-gray-500 hover:bg-gray-100"
-                                    }`}
-                                  >
-                                    <span className="w-1.5 h-1.5 rounded-full bg-red-400 mr-1.5"></span>
-                                    High
-                                  </button>
-                                </div>
-                              </div>
-
-                              <div className="text-gray-500 col-span-1">
-                                Notes:
-                              </div>
-                              <div className="font-medium col-span-2 text-gray-800">
-                                <div className="relative">
-                                  <div className="absolute -left-1 top-1 w-0.5 h-5 bg-gray-200 rounded-full"></div>
-                                  <p className="pl-2 text-sm line-clamp-2">
-                                    {notes || (
-                                      <span className="text-gray-400 italic">
-                                        No notes added
-                                      </span>
-                                    )}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Three Action Buttons */}
-                            <div className="grid grid-cols-3 gap-2 pt-2">
-                              {/* Completed Button */}
-                              <button
-                                onClick={() => handleStatusChange("complaint")}
-                                className={`px-3 py-2 text-xs font-medium rounded-lg transition-all duration-200 flex items-center justify-center space-x-1 ${
-                                  enquiry.status === "complaint"
-                                    ? "bg-green-600 text-white shadow-md hover:bg-green-700"
-                                    : "bg-green-50 text-green-700 border border-green-200 hover:bg-green-100"
-                                }`}
-                              >
-                                <svg
-                                  className="h-3.5 w-3.5"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M5 13l4 4L19 7"
-                                  />
-                                </svg>
-                                <span>Completed</span>
-                              </button>
-
-                              {/* Follow Up Button */}
-                              <button
-                                onClick={() => handleStatusChange("Sales")}
-                                className={`px-3 py-2 text-xs font-medium rounded-lg transition-all duration-200 flex items-center justify-center space-x-1 ${
-                                  enquiry.status === "Sales"
-                                    ? "bg-blue-600 text-white shadow-md hover:bg-blue-700"
-                                    : "bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100"
-                                }`}
-                              >
-                                <svg
-                                  className="h-3.5 w-3.5"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                  />
-                                </svg>
-                                <span>Follow Up</span>
-                              </button>
-
-                              {/* View Button */}
-                              <button className="px-3 py-2 text-xs font-medium rounded-lg transition-all duration-200 flex items-center justify-center space-x-1 bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100">
-                                <svg
-                                  className="h-3.5 w-3.5"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                                  />
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                                  />
-                                </svg>
-                                <span>View</span>
-                              </button>
-                            </div>
+                            )}
                           </div>
                         </div>
-                      )}
-                    </div>
-                  );
-                },
-              },
-              {
-                key: "customerName",
-                header: "Customer Name",
-
-                className: "min-w-[120px]",
-              },
-              {
-                key: "phone",
-                header: "Phone",
-                className: "min-w-[120px]",
-                render: (enquiry) => {
-                  const [isOpen, setIsOpen] = useState(false);
-
-                  return (
-                    <div className="relative group">
-                      {/* Phone number container that triggers the dropdown */}
-                      <div
-                        className="inline-block cursor-pointer hover:text-blue-600 transition-colors"
-                        onMouseEnter={() => setIsOpen(true)}
-                        onMouseLeave={() => setIsOpen(false)}
-                        onClick={() => setIsOpen(!isOpen)}
-                      >
-                        {enquiry.phone}
-                      </div>
-
-                      {/* Dropdown modal */}
-                      <div
-                        className={`absolute z-[100] w-64 bg-white shadow-xl rounded-lg overflow-hidden border border-gray-100 mt-1 left-0 transition-all duration-200 ease-out ${
-                          isOpen
-                            ? "opacity-100 visible scale-100"
-                            : "opacity-0 invisible scale-95"
-                        }`}
-                        onMouseEnter={() => setIsOpen(true)}
-                        onMouseLeave={() => setIsOpen(false)}
-                      >
-                        {/* Header with gradient background */}
-                        <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-3">
-                          <h3 className="font-semibold text-sm uppercase tracking-wider">
-                            Phone Actions
-                          </h3>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>
+                          {category.code}
                         </div>
-
-                        <div className="flex flex-col p-2 space-y-1">
-                          {/* Call Now - Enhanced with pulse animation */}
-                          <a
-                            href={`tel:${enquiry.phone.replace(
-                              /[^0-9+]/g,
-                              ""
-                            )}`}
-                            className="group flex items-center px-3 py-3 hover:bg-blue-50 rounded-lg text-sm transition-all duration-200 hover:shadow-sm"
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'} line-clamp-2 max-w-xs`}>
+                          {category.categoryDescription}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          onClick={() => handleStatusChange(category._id, category.categoryStatus)}
+                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                            category.categoryStatus === 'active'
+                              ? 'bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900 dark:text-green-200 dark:hover:bg-green-800'
+                              : 'bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-900 dark:text-red-200 dark:hover:bg-red-800'
+                          }`}
+                        >
+                          {category.categoryStatus === 'active' ? 'Active' : 'Inactive'}
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>
+                          {new Date(category.createdDate).toLocaleDateString()}
+                        </div>
+                        <div className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                          {new Date(category.createdDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex items-center gap-2">
+                          <Link
+                            to={`/category-management/view/${category._id}`}
+                            className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                            title="View"
                           >
-                            <div className="relative">
-                              <div className="absolute -inset-1 bg-blue-100 rounded-full blur opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-6 w-6 mr-3 text-blue-600 group-hover:animate-pulse"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                                />
-                              </svg>
-                            </div>
-                            <div>
-                              <div className="font-medium text-gray-800 group-hover:text-blue-700">
-                                Call Now
-                              </div>
-                              <div className="text-xs text-gray-500 group-hover:text-blue-600">
-                                {enquiry.phone}
-                              </div>
-                            </div>
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-4 w-4 ml-auto text-gray-400 group-hover:text-blue-500"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M14 5l7 7m0 0l-7 7m7-7H3"
-                              />
-                            </svg>
-                          </a>
-
-                          {/* Copy Number - With feedback animation */}
+                            <FiEye size={18} />
+                          </Link>
+                          <Link
+                            to={`/category-management/edit/${category._id}`}
+                            className="p-2 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20"
+                            title="Edit"
+                          >
+                            <FiEdit2 size={18} />
+                          </Link>
                           <button
-                            className="group flex items-center px-3 py-3 hover:bg-gray-50 rounded-lg text-sm transition-all duration-200 hover:shadow-sm"
-                            onClick={() => {
-                              navigator.clipboard.writeText(enquiry.phone);
-                              // Add toast notification here
-                            }}
+                            onClick={() => handleDeleteCategory(category._id)}
+                            className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+                            title="Delete"
                           >
-                            <div className="relative">
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-6 w-6 mr-3 text-gray-600 group-hover:text-purple-600"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
-                                />
-                              </svg>
-                              <div className="absolute inset-0 bg-purple-100 rounded-full opacity-0 group-hover:opacity-40 transition-opacity duration-300"></div>
-                            </div>
-                            <span className="font-medium text-gray-800 group-hover:text-purple-700">
-                              Copy Number
-                            </span>
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-4 w-4 ml-auto text-gray-400 group-hover:text-purple-500"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M14 5l7 7m0 0l-7 7m7-7H3"
-                              />
-                            </svg>
+                            <FiTrash2 size={18} />
                           </button>
-
-                          {/* WhatsApp - Vibrant green styling */}
-                          <a
-                            href={`https://wa.me/${enquiry.phone.replace(
-                              /[^0-9+]/g,
-                              ""
-                            )}`}
-                            className="group flex items-center px-3 py-3 hover:bg-green-50 rounded-lg text-sm transition-all duration-200 hover:shadow-sm"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <div className="relative">
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-6 w-6 mr-3 text-green-600 group-hover:animate-bounce"
-                                viewBox="0 0 24 24"
-                                fill="currentColor"
-                              >
-                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                              </svg>
-                              <div className="absolute inset-0 bg-green-100 rounded-full opacity-0 group-hover:opacity-40 transition-opacity duration-300"></div>
-                            </div>
-                            <span className="font-medium text-gray-800 group-hover:text-green-700">
-                              WhatsApp Message
-                            </span>
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-4 w-4 ml-auto text-gray-400 group-hover:text-green-500"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M14 5l7 7m0 0l-7 7m7-7H3"
-                              />
-                            </svg>
-                          </a>
                         </div>
-
-                        {/* Optional footer */}
-                        <div className="px-3 py-2 bg-gray-50 text-xs text-gray-500 border-t border-gray-100">
-                          Click outside to close
-                        </div>
-                      </div>
-                    </div>
-                  );
-                },
-              },
-              {
-                key: "email",
-                header: "Email",
-
-                className: "min-w-[200px]",
-              },
-              {
-                key: "city",
-                header: "City",
-
-                className: "min-w-[120px]",
-              },
-              {
-                key: "pestType",
-                header: "Type",
-
-                className: "min-w-[150px]",
-              },
-              {
-                key: "preferredServiceDate",
-                header: "District",
-              },
-
-              {
-                key: "createdDate",
-                header: "Created Date",
-
-                className: "min-w-[140px]",
-              },
-            ]}
-            data={enquiries}
-            onSort={(column, order) => requestSort(column as keyof Enquiry)}
-            noDataMessage={
-              <>
-                <Loading></Loading>
-              </>
-            }
-          />
-          <div className="flex items-center justify-between px-4 py-3 bg-white border border-gray-200 rounded-md shadow-sm mt-4">
-            <p className="text-sm text-gray-500">Showing 1–3 of 81</p>
-
-            <div className="flex gap-2">
-              <button className="inline-flex items-center justify-center w-8 h-8 rounded border border-gray-300 text-gray-500 hover:bg-gray-100">
-                &lt;
-              </button>
-              <button className="inline-flex items-center justify-center w-8 h-8 rounded border border-gray-300 text-gray-500 hover:bg-gray-100">
-                &gt;
-              </button>
-            </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
+
+          {/* Pagination */}
+          {categories.length > 0 && (
+            <div className={`px-6 py-4 border-t ${darkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-gray-50'}`}>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-700'}`}>
+                  Showing {((pagination.page - 1) * pagination.limit) + 1} to{' '}
+                  {Math.min(pagination.page * pagination.limit, pagination.totalRecords)} of{' '}
+                  {pagination.totalRecords} categories
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handlePageChange(pagination.page - 1)}
+                    disabled={pagination.page === 1}
+                    className={`px-3 py-1 rounded-lg ${
+                      pagination.page === 1
+                        ? 'opacity-50 cursor-not-allowed'
+                        : 'hover:bg-gray-200 dark:hover:bg-gray-700'
+                    } ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}
+                  >
+                    Previous
+                  </button>
+                  {[...Array(Math.min(5, pagination.totalPages))].map((_, i) => {
+                    const pageNumber = i + 1;
+                    return (
+                      <button
+                        key={pageNumber}
+                        onClick={() => handlePageChange(pageNumber)}
+                        className={`w-8 h-8 rounded-lg ${
+                          pagination.page === pageNumber
+                            ? 'bg-blue-600 text-white'
+                            : 'hover:bg-gray-200 dark:hover:bg-gray-700'
+                        } ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}
+                      >
+                        {pageNumber}
+                      </button>
+                    );
+                  })}
+                  {pagination.totalPages > 5 && (
+                    <span className={`px-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>...</span>
+                  )}
+                  <button
+                    onClick={() => handlePageChange(pagination.page + 1)}
+                    disabled={pagination.page === pagination.totalPages}
+                    className={`px-3 py-1 rounded-lg ${
+                      pagination.page === pagination.totalPages
+                        ? 'opacity-50 cursor-not-allowed'
+                        : 'hover:bg-gray-200 dark:hover:bg-gray-700'
+                    } ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
-    </>
+    </div>
   );
-}
+};
 
 export default CategoryManagementList;

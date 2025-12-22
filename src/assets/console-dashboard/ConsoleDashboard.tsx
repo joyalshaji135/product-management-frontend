@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import TechnicalSnap from "../components/TechnicalSanp";
-import ComplaintCard from "../components/ComplaintCard";
 import { FcBullish } from 'react-icons/fc';
 
 type ComplaintData = {
@@ -30,31 +28,8 @@ const ConsoleDashboard: React.FC = () => {
             <FcBullish className="text-[22px] sm:text-[26px]" />
           </h1>
         </div>
-        
-        {/* Mobile dashboard switcher */}
-        <div className="w-full sm:w-auto">
-          <select 
-            className="w-full sm:w-48 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            value={currentDashboard}
-            onChange={(e) => {}}
-          >
-            <option value="Operations">Operations</option>
-            <option value="Sales">Sales</option>
-            <option value="Service">Service</option>
-            <option value="Finance">Finance</option>
-          </select>
-        </div>
       </div>
 
-      {/* Responsive grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 bg-[#F7F7F7] dark:bg-gray-900/50 rounded-xl p-2">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm">
-          <TechnicalSnap title="Technical Snap" />
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm">
-          <ComplaintCard title="Complaints" data={complaintData} />
-        </div>
-      </div>
 
       {/* Additional mobile-friendly stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
