@@ -1,8 +1,17 @@
-import React, { useState } from 'react';
-import { useNavigate} from 'react-router-dom';
-import { FiEye, FiEyeOff, FiCheck, FiUser, FiMail, FiPhone, FiLock } from 'react-icons/fi';
-import ParticlesCanvas from '@/assets/components/ParticlesCanvas';
-import { toast } from 'react-toastify';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  FiEye,
+  FiEyeOff,
+  FiCheck,
+  FiUser,
+  FiMail,
+  FiPhone,
+  FiLock,
+} from "react-icons/fi";
+import ParticlesCanvas from "@/assets/components/ParticlesCanvas";
+import { toast } from "react-toastify";
+import { authService, RegisterRequest } from "@/services/registerService"; // Adjust the import path as needed
 
 interface FormData {
   firstName: string;
@@ -17,13 +26,13 @@ interface FormData {
 const Register = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState<FormData>({
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    mobile: '',
-    agreeToTerms: false
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    mobile: "",
+    agreeToTerms: false,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -32,21 +41,21 @@ const Register = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState({
     score: 0,
-    message: '',
-    color: 'text-gray-500'
+    message: "",
+    color: "text-gray-500",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
-    
-    setFormData(prev => ({
+
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     }));
-    
+
     // Clear error for this field when user starts typing
     if (errors[name]) {
-      setErrors(prev => {
+      setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[name];
         return newErrors;
@@ -54,15 +63,15 @@ const Register = () => {
     }
 
     // Check password strength
-    if (name === 'password') {
+    if (name === "password") {
       checkPasswordStrength(value);
     }
   };
 
   const checkPasswordStrength = (password: string) => {
     let score = 0;
-    let message = '';
-    let color = 'text-gray-500';
+    let message = "";
+    let color = "text-gray-500";
 
     if (password.length >= 8) score++;
     if (/[A-Z]/.test(password)) score++;
@@ -73,24 +82,24 @@ const Register = () => {
     switch (score) {
       case 0:
       case 1:
-        message = 'Very Weak';
-        color = 'text-red-500';
+        message = "Very Weak";
+        color = "text-red-500";
         break;
       case 2:
-        message = 'Weak';
-        color = 'text-orange-500';
+        message = "Weak";
+        color = "text-orange-500";
         break;
       case 3:
-        message = 'Fair';
-        color = 'text-yellow-500';
+        message = "Fair";
+        color = "text-yellow-500";
         break;
       case 4:
-        message = 'Good';
-        color = 'text-blue-500';
+        message = "Good";
+        color = "text-blue-500";
         break;
       case 5:
-        message = 'Strong';
-        color = 'text-green-500';
+        message = "Strong";
+        color = "text-green-500";
         break;
     }
 
@@ -101,37 +110,37 @@ const Register = () => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.firstName.trim()) {
-      newErrors.firstName = 'First name is required';
+      newErrors.firstName = "First name is required";
     }
 
     if (!formData.lastName.trim()) {
-      newErrors.lastName = 'Last name is required';
+      newErrors.lastName = "Last name is required";
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = "Email is required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = "Please enter a valid email address";
     }
 
     if (formData.mobile && !/^[0-9]{10}$/.test(formData.mobile)) {
-      newErrors.mobile = 'Please enter a valid 10-digit mobile number';
+      newErrors.mobile = "Please enter a valid 10-digit mobile number";
     }
 
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = "Password is required";
     } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
+      newErrors.password = "Password must be at least 8 characters";
     }
 
     if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
+      newErrors.confirmPassword = "Please confirm your password";
     } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = "Passwords do not match";
     }
 
     if (!formData.agreeToTerms) {
-      newErrors.agreeToTerms = 'You must agree to the terms and conditions';
+      newErrors.agreeToTerms = "You must agree to the terms and conditions";
     }
 
     setErrors(newErrors);
@@ -140,48 +149,124 @@ const Register = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     try {
       setLoading(true);
 
-      toast.success('Registration successful! Please login with your credentials.');
-      
-      // Redirect to login page after successful registration
-      navigate('/login');
-      
+      // Prepare data for API call - only include fields from your API spec
+      const registerData: RegisterRequest = {
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        email: formData.email.trim(),
+        password: formData.password,
+        // Include mobile only if it's provided and not empty
+        ...(formData.mobile &&
+          formData.mobile.trim() && { mobile: formData.mobile.trim() }),
+      };
+
+      // Call the registration API
+      const response = await authService.register(registerData);
+
+      if (response.success) {
+        // Success toast with green check icon and success message
+        toast.success(
+          <div className="flex items-center">
+            <svg
+              className="w-5 h-5 mr-2 text-green-500"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <span>
+              Registration successful! You can now login with your credentials.
+            </span>
+          </div>,
+          {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            className: "bg-green-50 border border-green-200 text-green-800",
+          }
+        );
+
+        // Optionally, you could automatically log the user in after registration
+        // by storing the token if it's returned in the response
+        if (response.data.token) {
+          localStorage.setItem("token", response.data.token);
+          localStorage.setItem("user", JSON.stringify(response.data));
+          navigate("/dashboard"); // Redirect to dashboard if auto-login
+        } else {
+          // Redirect to login page after successful registration
+          navigate("/login");
+        }
+      } else {
+        toast.error(
+          response.message || "Registration failed. Please try again.",
+          {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            className: "bg-red-50 border border-red-200 text-red-800",
+          }
+        );
+      }
     } catch (err: any) {
-      console.error('Registration error:', err);
-      
-      let errorMessage = 'Registration failed. Please try again.';
-      
+      console.error("Registration error:", err);
+
+      let errorMessage = "Registration failed. Please try again.";
+
       if (err.response?.data?.message) {
         errorMessage = err.response.data.message;
       } else if (err.response?.data?.errors) {
         // Handle validation errors from server
         const errors = err.response.data.errors;
-        errorMessage = Object.values(errors).flat().join(', ');
+        errorMessage = Object.values(errors).flat().join(", ");
       } else if (err.response?.status === 400) {
-        errorMessage = 'Invalid data submitted. Please check all fields.';
+        errorMessage = "Invalid data submitted. Please check all fields.";
       } else if (err.response?.status === 409) {
-        errorMessage = 'Email already exists. Please use a different email or login.';
+        errorMessage =
+          "Email already exists. Please use a different email or login.";
+      } else if (err.response?.status === 500) {
+        errorMessage = "Server error. Please try again later.";
+      } else if (!err.response) {
+        errorMessage = "Network error. Please check your internet connection.";
       }
-      
-      toast.error(errorMessage);
+
+      toast.error(errorMessage, {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        className: "bg-red-50 border border-red-200 text-red-800",
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const handleLoginRedirect = () => {
-    navigate('/login');
+    navigate("/login");
   };
 
   return (
     <div className="min-h-screen bg-white flex flex-col lg:flex-row relative overflow-hidden">
       <ParticlesCanvas />
-      
+
       {/* Background shapes */}
       <div className="fixed inset-0 overflow-hidden">
         <div className="absolute inset-0 w-full h-full">
@@ -198,7 +283,9 @@ const Register = () => {
               <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
                 <FiUser className="text-white text-xl" />
               </div>
-              <span className="text-2xl font-bold text-gray-800">Product Management</span>
+              <span className="text-2xl font-bold text-gray-800">
+                Product Management
+              </span>
             </div>
           </div>
 
@@ -223,13 +310,15 @@ const Register = () => {
                     value={formData.firstName}
                     onChange={handleChange}
                     className={`w-full pl-10 pr-3 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.firstName ? 'border-red-500' : 'border-gray-300'
+                      errors.firstName ? "border-red-500" : "border-gray-300"
                     }`}
                     placeholder="First Name"
                   />
                 </div>
                 {errors.firstName && (
-                  <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.firstName}
+                  </p>
                 )}
               </div>
 
@@ -244,7 +333,7 @@ const Register = () => {
                     value={formData.lastName}
                     onChange={handleChange}
                     className={`w-full pl-10 pr-3 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.lastName ? 'border-red-500' : 'border-gray-300'
+                      errors.lastName ? "border-red-500" : "border-gray-300"
                     }`}
                     placeholder="Last Name"
                   />
@@ -267,7 +356,7 @@ const Register = () => {
                   value={formData.email}
                   onChange={handleChange}
                   className={`w-full pl-10 pr-3 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.email ? 'border-red-500' : 'border-gray-300'
+                    errors.email ? "border-red-500" : "border-gray-300"
                   }`}
                   placeholder="Email Address"
                 />
@@ -289,7 +378,7 @@ const Register = () => {
                   value={formData.mobile}
                   onChange={handleChange}
                   className={`w-full pl-10 pr-3 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.mobile ? 'border-red-500' : 'border-gray-300'
+                    errors.mobile ? "border-red-500" : "border-gray-300"
                   }`}
                   placeholder="Mobile Number (Optional)"
                 />
@@ -311,7 +400,7 @@ const Register = () => {
                   value={formData.password}
                   onChange={handleChange}
                   className={`w-full pl-10 pr-10 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.password ? 'border-red-500' : 'border-gray-300'
+                    errors.password ? "border-red-500" : "border-gray-300"
                   }`}
                   placeholder="Password"
                 />
@@ -330,42 +419,83 @@ const Register = () => {
               {errors.password && (
                 <p className="text-red-500 text-sm mt-1">{errors.password}</p>
               )}
-              
+
               {/* Password Strength Indicator */}
               {formData.password && (
                 <div className="mt-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Password Strength:</span>
-                    <span className={`text-sm font-medium ${passwordStrength.color}`}>
+                    <span className="text-sm text-gray-600">
+                      Password Strength:
+                    </span>
+                    <span
+                      className={`text-sm font-medium ${passwordStrength.color}`}
+                    >
                       {passwordStrength.message}
                     </span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
-                    <div 
+                    <div
                       className={`h-2 rounded-full ${
-                        passwordStrength.score <= 1 ? 'bg-red-500' :
-                        passwordStrength.score <= 2 ? 'bg-orange-500' :
-                        passwordStrength.score <= 3 ? 'bg-yellow-500' :
-                        passwordStrength.score <= 4 ? 'bg-blue-500' : 'bg-green-500'
+                        passwordStrength.score <= 1
+                          ? "bg-red-500"
+                          : passwordStrength.score <= 2
+                          ? "bg-orange-500"
+                          : passwordStrength.score <= 3
+                          ? "bg-yellow-500"
+                          : passwordStrength.score <= 4
+                          ? "bg-blue-500"
+                          : "bg-green-500"
                       }`}
                       style={{ width: `${passwordStrength.score * 20}%` }}
                     ></div>
                   </div>
                   <ul className="text-xs text-gray-500 mt-2 grid grid-cols-2 gap-1">
-                    <li className={`flex items-center ${formData.password.length >= 8 ? 'text-green-600' : ''}`}>
-                      <FiCheck className={`mr-1 ${formData.password.length >= 8 ? '' : 'invisible'}`} />
+                    <li
+                      className={`flex items-center ${
+                        formData.password.length >= 8 ? "text-green-600" : ""
+                      }`}
+                    >
+                      <FiCheck
+                        className={`mr-1 ${
+                          formData.password.length >= 8 ? "" : "invisible"
+                        }`}
+                      />
                       At least 8 characters
                     </li>
-                    <li className={`flex items-center ${/[A-Z]/.test(formData.password) ? 'text-green-600' : ''}`}>
-                      <FiCheck className={`mr-1 ${/[A-Z]/.test(formData.password) ? '' : 'invisible'}`} />
+                    <li
+                      className={`flex items-center ${
+                        /[A-Z]/.test(formData.password) ? "text-green-600" : ""
+                      }`}
+                    >
+                      <FiCheck
+                        className={`mr-1 ${
+                          /[A-Z]/.test(formData.password) ? "" : "invisible"
+                        }`}
+                      />
                       Uppercase letter
                     </li>
-                    <li className={`flex items-center ${/[a-z]/.test(formData.password) ? 'text-green-600' : ''}`}>
-                      <FiCheck className={`mr-1 ${/[a-z]/.test(formData.password) ? '' : 'invisible'}`} />
+                    <li
+                      className={`flex items-center ${
+                        /[a-z]/.test(formData.password) ? "text-green-600" : ""
+                      }`}
+                    >
+                      <FiCheck
+                        className={`mr-1 ${
+                          /[a-z]/.test(formData.password) ? "" : "invisible"
+                        }`}
+                      />
                       Lowercase letter
                     </li>
-                    <li className={`flex items-center ${/[0-9]/.test(formData.password) ? 'text-green-600' : ''}`}>
-                      <FiCheck className={`mr-1 ${/[0-9]/.test(formData.password) ? '' : 'invisible'}`} />
+                    <li
+                      className={`flex items-center ${
+                        /[0-9]/.test(formData.password) ? "text-green-600" : ""
+                      }`}
+                    >
+                      <FiCheck
+                        className={`mr-1 ${
+                          /[0-9]/.test(formData.password) ? "" : "invisible"
+                        }`}
+                      />
                       Number
                     </li>
                   </ul>
@@ -385,7 +515,9 @@ const Register = () => {
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   className={`w-full pl-10 pr-10 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
+                    errors.confirmPassword
+                      ? "border-red-500"
+                      : "border-gray-300"
                   }`}
                   placeholder="Confirm Password"
                 />
@@ -402,13 +534,17 @@ const Register = () => {
                 </button>
               </div>
               {errors.confirmPassword && (
-                <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>
-              )}
-              {formData.password && formData.confirmPassword && formData.password === formData.confirmPassword && (
-                <p className="text-green-600 text-sm mt-1 flex items-center">
-                  <FiCheck className="mr-1" /> Passwords match
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.confirmPassword}
                 </p>
               )}
+              {formData.password &&
+                formData.confirmPassword &&
+                formData.password === formData.confirmPassword && (
+                  <p className="text-green-600 text-sm mt-1 flex items-center">
+                    <FiCheck className="mr-1" /> Passwords match
+                  </p>
+                )}
             </div>
 
             {/* Terms and Conditions */}
@@ -422,11 +558,11 @@ const Register = () => {
                 className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
               <label htmlFor="agreeToTerms" className="text-sm text-gray-600">
-                I agree to the{' '}
+                I agree to the{" "}
                 <a href="#" className="text-blue-600 hover:underline">
                   Terms and Conditions
-                </a>{' '}
-                and{' '}
+                </a>{" "}
+                and{" "}
                 <a href="#" className="text-blue-600 hover:underline">
                   Privacy Policy
                 </a>
@@ -448,7 +584,7 @@ const Register = () => {
                   Creating Account...
                 </>
               ) : (
-                'Create Account'
+                "Create Account"
               )}
             </button>
 
@@ -458,14 +594,16 @@ const Register = () => {
                 <div className="w-full border-t border-gray-300"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                <span className="px-2 bg-white text-gray-500">
+                  Or continue with
+                </span>
               </div>
             </div>
 
             {/* Login Link */}
             <div className="text-center">
               <p className="text-gray-600">
-                Already have an account?{' '}
+                Already have an account?{" "}
                 <button
                   type="button"
                   onClick={handleLoginRedirect}
@@ -486,29 +624,37 @@ const Register = () => {
             <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <FiUser className="text-blue-600 text-3xl" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Start Your Journey</h2>
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+              Start Your Journey
+            </h2>
             <p className="text-gray-600 mb-6">
-              Join thousands of businesses using our CRM to streamline operations, 
-              manage customers, and boost productivity.
+              Join thousands of businesses using our CRM to streamline
+              operations, manage customers, and boost productivity.
             </p>
             <ul className="space-y-4 text-left">
               <li className="flex items-start">
                 <div className="flex-shrink-0 w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-3">
                   <FiCheck className="text-green-600" />
                 </div>
-                <span className="text-gray-700">Manage unlimited customers and leads</span>
+                <span className="text-gray-700">
+                  Manage unlimited customers and leads
+                </span>
               </li>
               <li className="flex items-start">
                 <div className="flex-shrink-0 w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-3">
                   <FiCheck className="text-green-600" />
                 </div>
-                <span className="text-gray-700">Track sales with real-time analytics</span>
+                <span className="text-gray-700">
+                  Track sales with real-time analytics
+                </span>
               </li>
               <li className="flex items-start">
                 <div className="flex-shrink-0 w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-3">
                   <FiCheck className="text-green-600" />
                 </div>
-                <span className="text-gray-700">Automated reporting and insights</span>
+                <span className="text-gray-700">
+                  Automated reporting and insights
+                </span>
               </li>
               <li className="flex items-start">
                 <div className="flex-shrink-0 w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-3">
